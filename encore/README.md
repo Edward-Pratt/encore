@@ -28,7 +28,8 @@ lyrics and a spectrum visualizer.
 - **Favourites**: Liked Songs plus any Spotify playlist, album, artist or track, in their
   own panel tab and the launcher. In Spotify use Share > Copy link, then **Paste link** in
   the Favourites tab (or the launcher's "Add copied Spotify link"); names come from
-  Spotify. One click starts Spotify if needed and plays it.
+  Spotify, and the pencil button renames any favourite. One click starts Spotify if
+  needed and plays it.
 - **Quit**: a power button quits apps that allow it (Spotify does, browsers don't), handy
   for one running hidden in the background.
 - **Sleep timer**: the zzz button next to the volume pauses everything after 15, 30, 45,

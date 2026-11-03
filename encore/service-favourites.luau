@@ -4,8 +4,11 @@
 -- the favourites setting, then links pasted from the panel or launcher (saved = true;
 -- only those can be removed there). Pasted links live in <data>/favourites.json, since a
 -- plugin cannot write its own settings. Entries without a name get Spotify's own
--- title from its public link preview (oEmbed), cached in the same file.
+-- title from its public link preview (oEmbed), cached in the same file. Any favourite
+-- can be renamed from the panel; renames are kept there too and win over every other
+-- name (an empty rename restores it).
 --   command = { action = "fav-add", link, at } | { action = "fav-remove", uri, at }
+--           | { action = "fav-rename", uri, name, at }
 local util = require("./service-util.luau")
 local favourites = require("./favourites.luau")
 
@@ -19,6 +22,7 @@ M.LIKED = "spotify:collection:tracks"
 local store = util.decode(noctalia.readFile(FILE) or "") or {}
 store.saved = type(store.saved) == "table" and store.saved or {}
 store.names = type(store.names) == "table" and store.names or {}
+store.renamed = type(store.renamed) == "table" and store.renamed or {}
 local pending = {} -- uri -> true while its name is looked up
 local lastAt = 0
 
@@ -40,7 +44,7 @@ function M.publish()
     seen[uri] = true
     if not name and not store.names[uri] then lookupName(uri) end
     local fallback = (favourites.parse({ uri })[1] or {}).name or uri
-    list[#list + 1] = { name = name or store.names[uri] or fallback, uri = uri, saved = saved }
+    list[#list + 1] = { name = store.renamed[uri] or name or store.names[uri] or fallback, uri = uri, saved = saved }
   end
   if noctalia.getConfig("liked_songs") ~= false and spotifyInstalled() then add("Liked Songs", M.LIKED, false) end
   for _, f in ipairs(favourites.parse(noctalia.getConfig("favourites"))) do
@@ -86,16 +90,28 @@ local function remove(uri)
   for i, f in ipairs(store.saved) do
     if f.uri == uri then
       table.remove(store.saved, i)
+      store.renamed[uri] = nil
       save()
       return M.publish()
     end
   end
 end
 
+local function rename(uri, name)
+  if type(uri) ~= "string" or uri == "" then return end
+  name = noctalia.string.trim(name or "")
+  store.renamed[uri] = name ~= "" and name or nil
+  save()
+  M.publish()
+end
+
 function M.command(cmd)
-  if type(cmd) ~= "table" or (cmd.action ~= "fav-add" and cmd.action ~= "fav-remove") or (cmd.at or 0) <= lastAt then return end
+  local actions = { ["fav-add"] = true, ["fav-remove"] = true, ["fav-rename"] = true }
+  if type(cmd) ~= "table" or not actions[cmd.action] or (cmd.at or 0) <= lastAt then return end
   lastAt = cmd.at
-  if cmd.action == "fav-add" then addLink(cmd.link or "") else remove(cmd.uri) end
+  if cmd.action == "fav-add" then addLink(cmd.link or "")
+  elseif cmd.action == "fav-rename" then rename(cmd.uri, cmd.name)
+  else remove(cmd.uri) end
 end
 
 return M

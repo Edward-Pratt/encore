@@ -76,9 +76,9 @@ function onKey(chord, pressed)
   if not pressed then return end
   local p = media.current(S.players, S.active)
   if not p then return end
-  if chord == "Space" then
+  if chord == "Space" and not apps.renaming() then
     control.playPause(p)
-  elseif (chord == "left" or chord == "right") and p.canSeek then
+  elseif (chord == "left" or chord == "right") and p.canSeek and not apps.renaming() then
     control.seek(p, media.position(p) + (chord == "left" and -SEEK_STEP_MS or SEEK_STEP_MS))
   end
 end
@@ -104,5 +104,6 @@ end
 
 function onClose()
   isOpen = false
+  apps.cancelRename()
   panel.setNeedsFrameTick(false)
 end

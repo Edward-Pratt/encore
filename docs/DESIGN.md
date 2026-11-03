@@ -37,7 +37,7 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
     service-launch.luau     opening apps and favourites, play-once-ready, hidden windows
     service-events.luau     reactions to player changes: pause others
     service-sleep.luau      sleep timer
-    service-favourites.luau favourites: Liked Songs, the setting, pasted links (<data>/favourites.json), names via oEmbed
+    service-favourites.luau favourites: Liked Songs, the setting, pasted links and renames (<data>/favourites.json), names via oEmbed
     service-util.luau       data dir, publish-on-change, cache-name hash
     lyrics-lookup.luau      one lookup across all sources at once, best result wins
     lyrics-http.luau        JSON GETs for the lyrics sources
@@ -110,6 +110,7 @@ poke    = nowMs                      -- surface -> service: read players now
 command = { action = "open", app?, uri?, at }       -- surface -> service: open an app / play a favourite
         | { action = "sleep", minutes, at }          -- set the sleep timer, 0 cancels
         | { action = "fav-add", link, at } | { action = "fav-remove", uri, at }
+        | { action = "fav-rename", uri, name, at }   -- any favourite; "" restores its own name
 favourites = [{ name, uri, saved }]  -- saved: pasted in the panel or launcher, removable there
 sleep   = { endsAt }                 -- 0 when off; read back on service start, so a reload keeps it
 ```

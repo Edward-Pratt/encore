@@ -54,18 +54,56 @@ function M.hasFavourites(ctx)
   return spotifyInstalled(ctx) or #ctx.S.favourites > 0
 end
 
+-- The favourite being renamed (its uri) and the name typed so far.
+local editing, draft = nil, ""
+
+-- True while a favourite's name is being edited: the panel then leaves the arrow keys
+-- to the text field instead of seeking.
+function M.renaming() return editing ~= nil end
+
+-- A closed panel drops an unfinished rename.
+function M.cancelRename() editing = nil end
+
+local function stopEditing(ctx, save)
+  if save and editing then control.renameFavourite(editing, draft) end
+  editing = nil
+  ctx.render()
+end
+
+local function editRow(ctx, f)
+  return ui.row({ key = "fav-edit-" .. f.uri, gap = 6, align = "center", paddingV = 2, paddingH = 6 }, {
+    ui.input({ key = "fav-input-" .. f.uri, value = f.name, focus = true, flexGrow = 1, controlSize = "sm",
+      placeholder = "Name (empty restores it)", submitOnEnter = true,
+      onChange = function(text) draft = text end,
+      onSubmit = function(text) draft = text; stopEditing(ctx, true) end }),
+    ui.button({ glyph = "check", variant = "ghost", controlSize = "sm", tooltip = "Save name",
+      onClick = function() stopEditing(ctx, true) end }),
+    ui.button({ glyph = "arrow-back-up", variant = "ghost", controlSize = "sm", tooltip = "Cancel",
+      onClick = function() stopEditing(ctx, false) end }),
+  })
+end
+
 local function favouriteRows(ctx)
   local rows = {}
   for i, f in ipairs(ctx.S.favourites) do
-    local kind = f.uri == "spotify:collection:tracks" and "liked" or favourites.kind(f.uri)
-    rows[#rows + 1] = ui.row({ key = "fav-" .. f.uri, gap = 10, align = "center", paddingV = 4, paddingH = 6, radius = 8,
-      tooltip = f.uri, onClick = function() control.open(nil, f.uri) end }, {
-      ui.glyph({ name = KIND_GLYPH[kind] or "music", size = 16, color = "primary" }),
-      ui.label({ text = f.name, fontSize = 13, flexGrow = 1, maxLines = 1 }),
-      ui.button({ key = "fav-rm-" .. i, glyph = "x", variant = "ghost", controlSize = "sm", visible = f.saved == true,
-        tooltip = "Remove from favourites", onClick = function() control.removeFavourite(f.uri) end }),
-      ui.glyph({ name = "player-play", size = 14, color = "on_surface_variant" }),
-    })
+    if f.uri == editing then
+      rows[#rows + 1] = editRow(ctx, f)
+    else
+      local kind = f.uri == "spotify:collection:tracks" and "liked" or favourites.kind(f.uri)
+      rows[#rows + 1] = ui.row({ key = "fav-" .. f.uri, gap = 10, align = "center", paddingV = 4, paddingH = 6, radius = 8,
+        tooltip = f.uri, onClick = function() control.open(nil, f.uri) end }, {
+        ui.glyph({ name = KIND_GLYPH[kind] or "music", size = 16, color = "primary" }),
+        ui.label({ text = f.name, fontSize = 13, flexGrow = 1, maxLines = 1 }),
+        ui.button({ key = "fav-ren-" .. i, glyph = "pencil", variant = "ghost", controlSize = "sm", tooltip = "Rename",
+          onClick = function()
+            editing, draft = f.uri, f.name
+            ctx.render()
+          end }),
+        ui.button({ key = "fav-rm-" .. i, glyph = "x", variant = "ghost", controlSize = "sm", visible = f.saved == true,
+          tooltip = "Remove from favourites", onClick = function() control.removeFavourite(f.uri) end }),
+        ui.glyph({ name = "player-play", size = 14, color = "on_surface_variant" }),
+      })
+    end
   end
   return rows
 end
