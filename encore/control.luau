@@ -38,6 +38,16 @@ function M.sleep(minutes)
   noctalia.state.set("command", { action = "sleep", minutes = minutes, at = noctalia.nowMs() })
 end
 
+-- Saves a Spotify link (share link or spotify: URI) as a favourite, or removes a saved
+-- one. See service-favourites.luau.
+function M.addFavourite(link)
+  noctalia.state.set("command", { action = "fav-add", link = link, at = noctalia.nowMs() })
+end
+
+function M.removeFavourite(uri)
+  noctalia.state.set("command", { action = "fav-remove", uri = uri, at = noctalia.nowMs() })
+end
+
 -- Turns the lyrics overlay on or off. See service-overlay.luau.
 function M.toggleOverlay()
   noctalia.state.set("command", { action = "overlay", at = noctalia.nowMs() })

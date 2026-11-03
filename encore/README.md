@@ -25,8 +25,10 @@ lyrics and a spectrum visualizer.
   gets an Open button in the panel and launcher. On Hyprland it starts on a hidden
   workspace, so no window appears, and starts playing once it is ready. A button next to
   the players shows or hides it.
-- **Favourites**: Spotify playlists, albums, artists or tracks from the settings, in their
-  own panel tab and the launcher. One click starts Spotify if needed and plays it.
+- **Favourites**: Liked Songs plus any Spotify playlist, album, artist or track, in their
+  own panel tab and the launcher. In Spotify use Share > Copy link, then **Paste link** in
+  the Favourites tab (or the launcher's "Add copied Spotify link"); names come from
+  Spotify. One click starts Spotify if needed and plays it.
 - **Quit**: a power button quits apps that allow it (Spotify does, browsers don't), handy
   for one running hidden in the background.
 - **Sleep timer**: the zzz button next to the volume pauses everything after 15, 30, 45,
@@ -62,7 +64,8 @@ others.
 | Overlay next line | off | The upcoming line, dimmed, below |
 | Open apps in the background | on | Hyprland: apps start on the hidden workspace `special:encore` |
 | Play when opened | on | Press play once an opened app is ready |
-| Favourites | none | Spotify share links or `spotify:` URIs, optionally `Name = link` |
+| Liked Songs in favourites | on | Lists Liked Songs first |
+| Favourites | none | Spotify share links or `spotify:` URIs, optionally `Name = link`; pasted links are kept separately |
 | Pause other players | off | A player that starts pauses every other one |
 
 Bar widget settings: album art, artist, title width (0 for cover only), lyrics on the
@@ -76,7 +79,8 @@ With lyrics on, Encore sends the playing track's artist, title, album and length
 on, the artist and title also go to NetEase Cloud Music (`music.163.com`) and Kugou
 (`kugou.com`, with the length), both China-based. Tracks longer than 20 minutes are never sent. Results,
 including "not found", are cached in the plugin's data directory. Album art served over
-HTTP(S) is downloaded from the URL the player reports and cached there too.
+HTTP(S) is downloaded from the URL the player reports and cached there too. A favourite
+without a name is looked up on Spotify's public link preview (`open.spotify.com/oembed`).
 
 ## IPC
 
@@ -87,6 +91,7 @@ noctalia msg plugin edward/encore:service all open spotify:playlist:ID   # play 
 noctalia msg plugin edward/encore:service all hidden                 # show or hide background apps
 noctalia msg plugin edward/encore:service all sleep 30               # sleep timer in minutes, 0 cancels
 noctalia msg plugin edward/encore:service all overlay                # lyrics overlay on or off
+noctalia msg plugin edward/encore:service all fav-add <spotify link> # save a favourite
 ```
 
 ## License

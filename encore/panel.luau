@@ -25,12 +25,13 @@ local function loadState()
   S.hidden = noctalia.state.get("hidden") or {}
   S.sleep = noctalia.state.get("sleep")
   S.overlay = noctalia.state.get("overlay")
+  S.favourites = noctalia.state.get("favourites") or {}
 end
 loadState()
 
--- Lyrics or Favourites below the player; the switch shows only with favourites set.
+-- Lyrics or Favourites below the player; the switch shows with Spotify or favourites.
 local function lowerPane(p)
-  if not apps.hasFavourites() then
+  if not apps.hasFavourites(ctx) then
     pane = "lyrics"
     return lyricsPane.render(ctx, p)
   end
@@ -40,7 +41,7 @@ local function lowerPane(p)
   end
   return ui.column({ flexGrow = 1, gap = 6 }, {
     ui.row({ gap = 4 }, { tab("lyrics", "Lyrics", "microphone-2"), tab("favourites", "Favourites", "star") }),
-    pane == "favourites" and apps.favouritesPane() or lyricsPane.render(ctx, p),
+    pane == "favourites" and apps.favouritesPane(ctx) or lyricsPane.render(ctx, p),
   })
 end
 
@@ -64,7 +65,7 @@ end
 
 ctx = { S = S, render = render, close = function() panel.close() end, now = 0, position = 0, line = 0 }
 
-for _, k in ipairs({ "players", "active", "lyrics", "apps", "hidden", "sleep", "overlay" }) do
+for _, k in ipairs({ "players", "active", "lyrics", "apps", "hidden", "sleep", "overlay", "favourites" }) do
   noctalia.state.watch(k, function()
     loadState()
     render()

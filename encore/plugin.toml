@@ -66,6 +66,13 @@ description_key = "settings.play_on_open.description"
 default = true
 
 [[setting]]
+key = "liked_songs"
+type = "bool"
+label_key = "settings.liked_songs.label"
+description_key = "settings.liked_songs.description"
+default = true
+
+[[setting]]
 key = "favourites"
 type = "string_list"
 label_key = "settings.favourites.label"

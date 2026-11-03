@@ -47,7 +47,8 @@ local function art(p)
 end
 
 local function track(p)
-  return ui.row({ gap = 14, align = "center" }, {
+  -- Keyed per track: a retained row kept the old title's measured width after a change.
+  return ui.row({ key = `track-{p.bus}-{p.title}-{p.artists}`, gap = 14, align = "center" }, {
     art(p),
     ui.column({ gap = 4, flexGrow = 1 }, {
       ui.label({ text = media.title(p), fontSize = 17, fontWeight = "bold", maxLines = 2 }),

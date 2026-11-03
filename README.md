@@ -16,7 +16,23 @@ noctalia msg plugins source add encore path ~/src/encore
 noctalia msg plugins enable edward/encore
 ```
 
-Then add the `Encore` widget to your bar.
+Then add it to your bar from the Bar Widgets settings with **Add Widget**, so its own
+settings (cover, title width, spectrum, lyrics on the bar) get a gear there. Encore's
+other settings are under its entry in the Plugins settings.
+
+### Updating
+
+Pull the new version, then turn the plugin off and on so Noctalia rereads its manifest:
+
+```sh
+git -C ~/src/encore pull
+noctalia msg plugins disable edward/encore && noctalia msg plugins enable edward/encore
+```
+
+`main` is the development branch. To stay on releases, check out the latest tag
+instead of pulling, for example `git -C ~/src/encore fetch --tags && git -C ~/src/encore
+checkout v0.2.0`. [Releases](https://github.com/Edward-Pratt/encore/releases) lists them.
+Once Encore is in the catalog, Noctalia updates it like any other plugin.
 
 ## Layout
 

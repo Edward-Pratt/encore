@@ -10,12 +10,14 @@ local hyprland = require("./hyprland.luau")
 local events = require("./service-events.luau")
 local sleep = require("./service-sleep.luau")
 local overlay = require("./service-overlay.luau")
+local favs = require("./service-favourites.luau")
 
 local TICK_MS = 2000
 
 players.ensureStream()
 players.fetch()
 apps.scan()
+favs.publish()
 
 -- Surfaces set `poke` after sending a control, so the result shows without waiting for
 -- a signal (some players send none for volume or shuffle).
@@ -32,21 +34,25 @@ noctalia.state.watch("active", function()
   overlay.update()
 end)
 noctalia.state.watch("lyrics", function() overlay.update() end)
+noctalia.state.watch("apps", function() favs.publish() end)
 noctalia.state.watch("command", function(cmd)
   launch.command(cmd)
   sleep.command(cmd)
   overlay.command(cmd)
+  favs.command(cmd)
 end)
 
 function onConfigChanged()
   lyrics.check(true)
   overlay.configChanged()
+  favs.publish()
 end
 
 -- `noctalia msg plugin edward/encore:service all open spotify-launcher` opens an app by
 -- desktop id; `... open spotify:playlist:ID` (or a share link) plays it in Spotify.
 -- `... hidden` shows or hides the background apps; `... sleep 30` sets the sleep timer
--- (0 cancels); `... overlay` turns the lyrics overlay on or off. All suit keybinds.
+-- (0 cancels); `... overlay` turns the lyrics overlay on or off; `... fav-add <link>`
+-- saves a Spotify link as a favourite. All suit keybinds.
 function onIpc(event, payload)
   if event == "open" and payload then
     local uri = favourites.uri(payload)
@@ -57,6 +63,8 @@ function onIpc(event, payload)
     sleep.set(payload)
   elseif event == "overlay" then
     overlay.toggle()
+  elseif event == "fav-add" and payload then
+    favs.command({ action = "fav-add", link = payload, at = noctalia.nowMs() })
   end
 end
 

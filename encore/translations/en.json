@@ -44,9 +44,13 @@
       "label": "Play when opened",
       "description": "Presses play once an app opened from Encore is ready, so it resumes where you left off."
     },
+    "liked_songs": {
+      "label": "Liked Songs in favourites",
+      "description": "Lists your Spotify Liked Songs first among the favourites."
+    },
     "favourites": {
       "label": "Favourites",
-      "description": "Spotify playlists, albums, artists or tracks to start from the panel and launcher. Paste a share link or spotify: URI, optionally as Name = link."
+      "description": "Spotify playlists, albums, artists or tracks to start from the panel and launcher. Paste a share link or spotify: URI, optionally as Name = link. Links can also be pasted straight into the panel's Favourites tab, and names are filled in from Spotify."
     },
     "pause_others": {
       "label": "Pause other players",

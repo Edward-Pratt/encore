@@ -25,6 +25,17 @@ function M.uri(link)
   return nil
 end
 
+-- "spotify:playlist:ID" -> "playlist".
+function M.kind(uri) return string.match(uri or "", "^spotify:(%a+):") end
+
+-- The open.spotify.com link for a URI, for Spotify's public name lookup (oEmbed); nil for
+-- URIs without a web page (Liked Songs).
+function M.webUrl(uri)
+  local kind, id = string.match(uri or "", "^spotify:(%a+):([%w]+)$")
+  if not kind or not KINDS[kind] then return nil end
+  return "https://open.spotify.com/" .. kind .. "/" .. id
+end
+
 -- { { name, uri } } in setting order; entries that are not Spotify links are skipped.
 function M.parse(list)
   local out = {}

@@ -6,6 +6,7 @@ local media = require("./media.luau")
 local control = require("./control.luau")
 local hyprland = require("./hyprland.luau")
 local favourites = require("./favourites.luau")
+local favs = noctalia.state.get("favourites") or {}
 
 local players = noctalia.state.get("players") or {}
 local active = noctalia.state.get("active") or ""
@@ -46,8 +47,12 @@ local function results(query)
       add("app-" .. app.id, `Open {app.name}`, "Starts it and plays", "player-play", function() control.open(app.id) end)
     end
   end
-  for i, f in ipairs(favourites.parse(noctalia.getConfig("favourites"))) do
+  for i, f in ipairs(favs) do
     add("fav-" .. i, `Play {f.name}`, "Favourite, in Spotify", "star", function() control.open(nil, f.uri) end)
+  end
+  local copied = noctalia.clipboardText()
+  if copied and favourites.uri(copied) then
+    add("fav-add", "Add copied Spotify link to favourites", copied, "clipboard-plus", function() control.addFavourite(copied) end)
   end
   if #hidden > 0 then
     add("hidden", "Show background apps", "Toggles Encore's hidden workspace", "app-window", function() hyprland.toggle() end)
@@ -81,3 +86,4 @@ noctalia.state.watch("apps", function(v) apps = v or {}; onQuery(lastQuery) end)
 noctalia.state.watch("hidden", function(v) hidden = v or {}; onQuery(lastQuery) end)
 noctalia.state.watch("sleep", function(v) sleep = v; onQuery(lastQuery) end)
 noctalia.state.watch("overlay", function(v) overlay = v; onQuery(lastQuery) end)
+noctalia.state.watch("favourites", function(v) favs = v or {}; onQuery(lastQuery) end)

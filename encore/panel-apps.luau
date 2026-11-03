@@ -9,7 +9,8 @@ local favourites = require("./favourites.luau")
 
 local M = {}
 
-local KIND_GLYPH = { playlist = "playlist", album = "disc", artist = "user", track = "music", show = "microphone", episode = "microphone" }
+local KIND_GLYPH = { playlist = "playlist", album = "disc", artist = "user", track = "music", show = "microphone",
+  episode = "microphone", liked = "heart" }
 
 local function background() return noctalia.getConfig("open_in_background") ~= false and hyprland.available() end
 
@@ -41,32 +42,50 @@ function M.chipButtons(ctx)
   return out
 end
 
-function M.hasFavourites()
-  return #favourites.parse(noctalia.getConfig("favourites")) > 0
+local function spotifyInstalled(ctx)
+  for _, app in ipairs(ctx.S.apps) do
+    if app.wmClass == "spotify" or string.find(app.id, "spotify", 1, true) then return true end
+  end
+  return false
 end
 
-local function favouriteRows()
+-- The Favourites tab shows with Spotify installed or any favourite set.
+function M.hasFavourites(ctx)
+  return spotifyInstalled(ctx) or #ctx.S.favourites > 0
+end
+
+local function favouriteRows(ctx)
   local rows = {}
-  for i, f in ipairs(favourites.parse(noctalia.getConfig("favourites"))) do
-    local kind = string.match(f.uri, "^spotify:(%a+):")
-    rows[#rows + 1] = ui.row({ key = "fav-" .. i, gap = 10, align = "center", paddingV = 6, paddingH = 6, radius = 8,
+  for i, f in ipairs(ctx.S.favourites) do
+    local kind = f.uri == "spotify:collection:tracks" and "liked" or favourites.kind(f.uri)
+    rows[#rows + 1] = ui.row({ key = "fav-" .. f.uri, gap = 10, align = "center", paddingV = 4, paddingH = 6, radius = 8,
       tooltip = f.uri, onClick = function() control.open(nil, f.uri) end }, {
       ui.glyph({ name = KIND_GLYPH[kind] or "music", size = 16, color = "primary" }),
       ui.label({ text = f.name, fontSize = 13, flexGrow = 1, maxLines = 1 }),
+      ui.button({ key = "fav-rm-" .. i, glyph = "x", variant = "ghost", controlSize = "sm", visible = f.saved == true,
+        tooltip = "Remove from favourites", onClick = function() control.removeFavourite(f.uri) end }),
       ui.glyph({ name = "player-play", size = 14, color = "on_surface_variant" }),
     })
   end
   return rows
 end
 
--- The Favourites pane: one row per favourite; a click plays it in Spotify.
-function M.favouritesPane()
-  local rows = favouriteRows()
+-- Copy a link in Spotify (Share > Copy link), then this saves it.
+local function pasteButton()
+  return ui.button({ key = "fav-paste", glyph = "clipboard-plus", text = "Paste link", variant = "ghost", controlSize = "sm",
+    tooltip = "In Spotify, Share > Copy link on a playlist, album, artist or track, then click here",
+    onClick = function() control.addFavourite(noctalia.clipboardText() or "") end })
+end
+
+-- The Favourites pane: a row per favourite (click plays it in Spotify) and Paste link.
+function M.favouritesPane(ctx)
+  local rows = favouriteRows(ctx)
   if #rows == 0 then
-    rows = { ui.label({ text = "Add Spotify playlists, albums or tracks in Encore's settings: paste a share link, "
-      .. "or write Name = link.", fontSize = 12, color = "on_surface_variant" }) }
+    rows = { ui.label({ text = "Copy a Spotify link (Share > Copy link) and click Paste link, or add links in "
+      .. "Encore's settings.", fontSize = 12, color = "on_surface_variant" }) }
   end
-  return ui.column({ flexGrow = 1, padding = 10, radius = 12, fill = "surface_container" }, {
+  return ui.column({ flexGrow = 1, gap = 6, padding = 10, radius = 12, fill = "surface_container" }, {
+    ui.row({ justify = "end" }, { pasteButton() }),
     ui.scroll({ flexGrow = 1, gap = 2 }, rows),
   })
 end
@@ -91,7 +110,7 @@ function M.launchView(ctx)
     rows[#rows + 1] = ui.label({ text = "No music apps found. Anything that speaks MPRIS shows up here once it runs.",
       fontSize = 12, color = "on_surface_variant" })
   end
-  local favs = favouriteRows()
+  local favs = favouriteRows(ctx)
   if #favs > 0 then
     rows[#rows + 1] = ui.label({ text = "Favourites", fontSize = 12, fontWeight = "bold", color = "on_surface_variant" })
     rows[#rows + 1] = ui.scroll({ flexGrow = 1, gap = 2 }, favs)

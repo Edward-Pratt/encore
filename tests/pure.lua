@@ -90,6 +90,9 @@ eq(favs[1].uri, "spotify:playlist:AAA", "named uri")
 eq(favs[2].name, "Album BBBBBB", "default name")
 eq(favs[3].uri, "spotify:playlist:CCC", "unnamed link with ?si=")
 eq(favs[4].name, "Name", "no spaces around =")
+eq(fav.kind("spotify:album:X1"), "album", "kind")
+eq(fav.webUrl("spotify:playlist:37i9dQ"), "https://open.spotify.com/playlist/37i9dQ", "web url")
+eq(fav.webUrl("spotify:collection:tracks"), nil, "no web page for Liked Songs")
 
 local y = yrc.parse('{"t":0,"c":[{"tx":"作词: "},{"tx":"Someone"}]}\n'
   .. "[37330,3900](37330,570,0)Between (37900,120,0)the (38020,540,0)ci(38300,200,0)ty\n"
