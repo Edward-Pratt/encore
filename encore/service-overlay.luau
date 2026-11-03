@@ -5,6 +5,7 @@
 -- synced lyrics. Published as `overlay = { enabled }`.
 local util = require("./service-util.luau")
 local media = require("./media.luau")
+local place = require("./overlay-place.luau")
 
 local M = {}
 
@@ -16,17 +17,28 @@ local enabled = saved ~= nil and saved.enabled == true
 local shown = false
 local lastAt = 0
 
--- The layer's monitor, edge, distance from it and height, from the overlay_* settings.
+-- The layer's monitor, anchors, distance from the edges it touches and height, from
+-- the overlay_* settings. With no anchor on an axis the compositor centres it there.
 local function props()
   local o = noctalia.string.trim(noctalia.getConfig("overlay_output") or "")
-  local edge = noctalia.getConfig("overlay_position") == "top" and "top" or "bottom"
+  local spot = place.of(noctalia.getConfig("overlay_position"))
   local size = tonumber(noctalia.getConfig("overlay_size")) or 16
   local nextLine = noctalia.getConfig("overlay_next_line") == true
+  local offset = tonumber(noctalia.getConfig("overlay_offset")) or 70
+  local anchors, margins = {}, {}
+  for _, side in ipairs({ spot.v, spot.h }) do
+    if side ~= "center" then
+      anchors[#anchors + 1] = side
+      margins[side] = offset
+    end
+  end
   return {
     output = o ~= "" and o or "focused",
-    anchors = { edge },
-    margins = { [edge] = tonumber(noctalia.getConfig("overlay_offset")) or 70 },
-    height = math.ceil(size * (nextLine and 3.6 or 2.6)) + 16,
+    anchors = anchors,
+    margins = margins,
+    -- Room for a lyric wrapped to three lines (and two for the next one); the space it
+    -- does not use is transparent and click-through.
+    height = math.ceil(size * (3 * 1.35 + (nextLine and 2 * 1.1 or 0) + 1.2)) + 16,
   }
 end
 

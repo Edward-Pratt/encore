@@ -38,12 +38,15 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
     service-events.luau     reactions to player changes: pause others
     service-sleep.luau      sleep timer
     service-util.luau       data dir, publish-on-change, cache-name hash
+    lyrics-lookup.luau      one lookup across all sources at once, best result wins
     lyrics-http.luau        JSON GETs for the lyrics sources
     lyrics-lrclib.luau      LRCLIB lookups (exact match, search)
     lyrics-netease.luau     NetEase Cloud Music lookup, a backup source
     lyrics-kugou.luau       Kugou lookup, a backup source (base64 LRC)
     base64.luau             base64 decoder (pure, plain Lua 5)
     yrc.luau                NetEase word-timed lyrics parser (pure, plain Lua 5)
+    lyric-wrap.luau         breaks karaoke lines into rows that fit (pure, plain Lua 5)
+    overlay-place.luau      overlay position setting -> anchors and alignment (pure, plain Lua 5)
     service-overlay.luau    lyrics overlay on/off (kept in <data>/overlay.json) and when it shows
     overlay.luau            the lyrics overlay layer
     lrc.luau                LRC parser, credit-line filter and line lookup (pure, plain Lua 5)
@@ -71,7 +74,7 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
 | Art | `file://` passed through; `http(s)` downloaded to `<data>/art`, newest 60 kept | when a new art URL appears |
 | Apps | one `grep` for `Categories=...Music` over every XDG `applications` dir, then those entries are read | at start and every 10 min |
 | Hidden windows | `hyprctl clients -j`, windows on `special:encore` | on players change and every 10 s, Hyprland only |
-| Lyrics | LRCLIB `/api/get` (artist, title, album, length), LRCLIB `/api/search`, NetEase search + `/api/song/lyric`, Kugou search + download, then the searches again with the title cleaned of video noise; first synced result of the right length wins | once per track; cached in `<data>/lyrics`; misses retried after 7 days, failures every 30 s up to 3 times |
+| Lyrics | LRCLIB (`/api/get`, then `/api/search`), NetEase (search + `/api/song/lyric/v1`) and Kugou (search + download), all at once, each first with the player's fields and then with a cleaned title (video noise, version tails such as "- 2006 Remaster", bracketed alternative titles) | once per track; the first usable result shows at once and better ones replace it; the best is cached in `<data>/lyrics`; misses retried after 7 days, failures every 30 s up to 3 times |
 
 Controls go straight from the surface to `dev.noctalia.Mpris` (`control.luau`), which
 then sets `poke` so the service reads the result without waiting for a signal.
@@ -143,33 +146,46 @@ the player reports Playing. Spotify ignores requests while it starts.
   where `CanQuit` is true, so browsers never get it.
 - **Bar lyrics** tick the widget every 250 ms only while synced lyrics play, and render
   only when the line changes; otherwise the widget ticks once a minute.
+- **Parallel lookup**: the sources are lanes that run side by side (`lyrics-lookup.luau`);
+  each lane tries the exact query, then the cleaned one, and stops at a hit of the right
+  length. Results rank: right-length word timing (ends the whole lookup), right-length
+  lines, other-length word timing, other-length lines, plain. Sequential lookups made
+  the overlay late and left the backups unused whenever LRCLIB was slow or answering 503.
 - **Lengths**: every source returns its closest version and flags it `loose` when it is
-  more than 15 s off. A synced hit of the right length ends the chain; otherwise a loose
-  synced hit beats plain lyrics. Players sometimes report a stale length at a track
+  more than 15 s off. Players sometimes report a stale length at a track
   change (Spotify gave 169 s for a 211 s track), and a strict-only match then found
   nothing. Loose results are cached but looked up again on the next play.
 - **No Musixmatch**: its API needs a token only its own apps get; Encore uses sources
   with public endpoints.
-- **Lyrics sources**: a failing source (LRCLIB's search answers 503 at times) only moves
-  the chain on. When nothing is found and a source failed, the lookup is retried every
+- **Lyrics sources**: a failing source (LRCLIB answers 503 at times) only ends its own
+  lane. When nothing is found and a source failed, the lookup is retried every
   30 s, three times, before the miss is cached. Cache entries carry a version and the
   source set, so plain lyrics and misses are looked up again when the backups are switched on.
   NetEase lyrics start with credit lines ("作词 : Name"); `lrc.stripCredits` drops them.
 - **Lyrics overlay** is an `overlay`-layer surface (above fullscreen windows), click-through
   and without keyboard, 1100x140 near the bottom edge. Minimal by design: the current
-  line alone on a slim translucent pill with the cover, fading in over 180 ms; nothing
-  before the first line or in instrumental gaps. With word timing each word is its own
+  line alone on a slim translucent pill with the cover. It fades in (180 ms) only when it
+  appears; a new line replaces the text in place, and an empty line shorter than 6 s
+  (a breath between lines) keeps the last line up, so it never flashes. Nothing before
+  the first line or in longer instrumental gaps. Seven spots (corners, edge centres,
+  centre): the layer is anchored to the edges the spot touches with the offset as their
+  margins, unanchored axes are centred by the compositor, and the pill is aligned to
+  the same side inside the layer. With word timing each word is its own
   label, lit in the accent colour once sung (a spacer stands in for spaces, since
-  yrc words can be syllables). Size, background, cover, next line and highlighting are
+  yrc words can be syllables). Lyrics without word timing light the whole line in
+  "words" mode. Long lines wrap instead of being cut: a plain label to
+  three lines, a karaoke line into rows broken at spaces from an estimated glyph width
+  (`lyric-wrap.luau`). The layer is tall enough for three lines; the unused part is
+  transparent and click-through. Size, background, cover, next line and highlighting are
   read on every render; position, offset and height go to the layer through
   `noctalia.layer.configure` (layers get no onConfigChanged).
 - **Word timing** comes from NetEase's `yrc` (and enhanced LRC `<mm:ss.xx>` tags from any
-  source). After a line-timed hit of the right length the chain still asks the sources
-  that can give word timing (NetEase); NetEase tries up to three releases of the song,
-  closest length first, since the closest one may have no lyrics or no word timing.
-  Kugou's word format (KRC) is encrypted and compressed, so Kugou gives lines only. The service shows it while it is on,
-  the shown player plays and its synced lyrics are loaded or loading, and hides it
-  otherwise, so pausing or a track without synced lyrics removes it.
+  source). NetEase tries up to three releases of the song, closest length first, since
+  the closest one may have no lyrics or no word timing. Kugou's word format (KRC) is
+  encrypted and compressed, so Kugou gives lines only.
+- **Overlay visibility**: the service shows the layer while the overlay is on, the shown
+  player plays and its synced lyrics are loaded or loading, and hides it otherwise, so
+  pausing or a track without synced lyrics removes it.
 - **Lyrics offset** is applied by the panel, not the service, so changing it needs no
   new lookup. Positive values show lines earlier.
 - **Spectrum** reaches the bar widget only (`onAudioSpectrum`); it is not mirrored into the

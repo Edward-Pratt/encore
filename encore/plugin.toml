@@ -7,7 +7,7 @@
 # launcher render what it publishes and send controls straight to dev.noctalia.Mpris.
 id = "edward/encore"
 name = "Encore"
-version = "0.1.0"
+version = "0.2.0"
 # 43 (noctalia 5.4): the surface_container / outline_variant colour roles.
 # 33: revealKey on ui.scroll (lyrics follow the current line).
 # 24: argv process execution. 22: relative luau imports.
@@ -108,7 +108,12 @@ description_key = "settings.overlay_position.description"
 default = "bottom"
 options = [
   { value = "bottom", label_key = "settings.overlay_position.options.bottom" },
+  { value = "bottom-left", label_key = "settings.overlay_position.options.bottom_left" },
+  { value = "bottom-right", label_key = "settings.overlay_position.options.bottom_right" },
+  { value = "center", label_key = "settings.overlay_position.options.center" },
   { value = "top", label_key = "settings.overlay_position.options.top" },
+  { value = "top-left", label_key = "settings.overlay_position.options.top_left" },
+  { value = "top-right", label_key = "settings.overlay_position.options.top_right" },
 ]
 
 [[setting]]

@@ -1,7 +1,6 @@
 --!nonstrict
 -- LRCLIB (lrclib.net), the first lyrics source. steps(q, exact) returns the lookups for
--- one query, each { run = function(next), words } where run calls next(result, failed)
--- and words says whether the source can give word timing; result is
+-- one query, each { run = function(next) } where run calls next(result, failed); result is
 -- { status = "synced" | "plain" | "instrumental", lines | plain, source, loose } or nil.
 -- loose: the closest version found is more than MAX_DRIFT_S off the player's length (a
 -- different edit, or a wrong length from the player), so its timing may not match.
@@ -52,11 +51,11 @@ end
 function M.steps(q, exact)
   local steps = {}
   if exact then
-    steps[#steps + 1] = { words = false, run = function(next)
+    steps[#steps + 1] = { run = function(next)
       http.get(url("get", q, true), function(v, err) next(result(v), err) end)
     end }
   end
-  steps[#steps + 1] = { words = false, run = function(next)
+  steps[#steps + 1] = { run = function(next)
     http.get(url("search", q, false), function(v, err) next(result(best(v, q.durationS)), err) end)
   end }
   return steps

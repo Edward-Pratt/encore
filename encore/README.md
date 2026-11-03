@@ -54,8 +54,8 @@ others.
 | Lyrics timing (ms) | 0 | Positive shows lines earlier |
 | Lyrics overlay monitor | focused | A connector such as `DP-1`, or `all` |
 | Overlay text size | 16 | Pixels |
-| Overlay position | bottom | Bottom or top of the screen |
-| Overlay distance from edge | 70 | Pixels |
+| Overlay position | bottom | Top, bottom or centre; left, centred or right |
+| Overlay distance from edge | 70 | Pixels from the edges it sits against |
 | Overlay background | 80 | Pill strength in %; 0 shows the text alone |
 | Overlay highlighting | words | Words (karaoke, when timed), whole line, or none |
 | Overlay cover | on | The album cover beside the lyric |

@@ -55,7 +55,7 @@ end
 -- timing, while the next does. So up to TRIES are fetched, closest first; the first
 -- word-timed one wins, else the first with lyrics.
 function M.steps(q)
-  return { { words = true, run = function(next)
+  return { { run = function(next)
     http.get(SEARCH .. http.enc(q.title .. " " .. q.artist), function(v, err)
       local list = candidates(v and v.result and v.result.songs, q)
       if err or #list == 0 then return next(nil, err) end

@@ -1,8 +1,9 @@
 --!nonstrict
 -- What to ask a lyrics source for, from what a player reports. Web players report video
 -- titles ("Artist - Song (Official Video)") and channel names ("ArtistVEVO",
--- "Artist - Topic"), so the fallback query cleans them up. Pure, and plain Lua 5 so
--- tests/pure.lua can run it without noctalia.
+-- "Artist - Topic"); streaming apps add version tails ("Song - 2006 Remaster") and
+-- alternative titles in brackets ("Song (Why Don't You Use It!)"). The fallback query
+-- drops all of that. Pure, and plain Lua 5 so tests/pure.lua can run it without noctalia.
 
 local M = {}
 
@@ -11,6 +12,14 @@ local NOISE = {
   "lyric video", "lyrics", "music video", "audio", "visualizer", "visualiser", "hd", "4k",
   "remastered", "explicit",
 }
+
+-- Words that mark a " - ..." tail as a version of the song rather than part of its name.
+local VERSION = {
+  "remaster", "live", "version", "mix", "edit", "mono", "stereo", "single", "acoustic", "demo",
+  "bonus", "instrumental", "deluxe", "anniversary", "recorded", "radio", "session",
+}
+
+local DASH = "^(.-)%s+[%-–—]%s+(.+)$"
 
 local function trim(s) return (string.gsub(s, "^%s*(.-)%s*$", "%1")) end
 
@@ -28,6 +37,29 @@ local function stripNoise(title)
   return trim(title)
 end
 
+local function isVersion(tail)
+  local lower = string.lower(tail)
+  if string.match(lower, "^%d%d%d%d$") then return true end
+  for _, word in ipairs(VERSION) do
+    if string.find(lower, word, 1, true) then return true end
+  end
+  return false
+end
+
+-- "Song - 2006 Remaster" -> "Song".
+local function stripVersion(title)
+  local base, tail = string.match(title, DASH)
+  if base and isVersion(tail) then return trim(base) end
+  return title
+end
+
+-- Every bracketed part: "Song (Why Don't You Use It!) [Live]" -> "Song".
+local function stripBrackets(title)
+  local s = string.gsub(title, "%s*%b()", "")
+  s = string.gsub(s, "%s*%b[]", "")
+  return trim(s)
+end
+
 local function cleanArtist(artist)
   artist = string.gsub(artist, "%s*%-%s*Topic$", "")
   artist = string.gsub(artist, "VEVO$", "")
@@ -43,10 +75,18 @@ end
 -- The cleaned query for a search, or nil when it would equal the exact one.
 function M.cleaned(track)
   local exact = M.exact(track)
-  local artist, title = cleanArtist(exact.artist), stripNoise(exact.title)
-  -- "Artist - Song" in the title wins over a channel name.
-  local a, t = string.match(title, "^(.-)%s+[%-–—]%s+(.+)$")
-  if a and t then artist, title = trim(a), stripNoise(t) end
+  local artist, title = cleanArtist(exact.artist), stripVersion(stripNoise(exact.title))
+  -- "Artist - Song" in a video title: split only when the player's artist is a channel
+  -- (VEVO, "- Topic", none) or the left part names the artist, so a music app's
+  -- "Song - Something" keeps its title.
+  local a, t = string.match(title, DASH)
+  if a and t then
+    local channel = exact.artist == "" or artist ~= exact.artist
+    local names = artist ~= "" and string.find(string.lower(a), string.lower(artist), 1, true)
+    if channel or names then artist, title = trim(a), stripVersion(stripNoise(t)) end
+  end
+  local bare = stripBrackets(title)
+  if bare ~= "" then title = bare end
   if title == "" then return nil end
   if artist == exact.artist and title == exact.title then return nil end
   return { artist = artist, title = title, album = "", durationS = exact.durationS }

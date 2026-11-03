@@ -42,7 +42,7 @@ local function result(reply, q, drift)
 end
 
 function M.steps(q)
-  return { { words = false, run = function(next)
+  return { { run = function(next)
     local url = SEARCH .. "&keyword=" .. http.enc(q.artist .. " - " .. q.title)
     if q.durationS > 0 then url ..= "&duration=" .. (q.durationS * 1000) end
     http.get(url, function(v, err)

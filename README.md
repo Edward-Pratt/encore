@@ -23,7 +23,7 @@ Then add the `Encore` widget to your bar.
 ```
 encore/      the plugin, in the community-plugins layout (dir name = id suffix)
 docs/        DESIGN.md: data ownership, state contract, decisions
-tests/       lrc.lua, tests for the pure modules
+tests/       pure.lua, tests for the pure modules
 ```
 
 ## Development

@@ -6,6 +6,8 @@ local desktop = load("desktop-entry")
 local fav = load("favourites")
 local b64 = load("base64")
 local yrc = load("yrc")
+local wrap = load("lyric-wrap")
+local place = load("overlay-place")
 
 local failures = 0
 local function eq(got, want, what)
@@ -52,7 +54,16 @@ eq(c.artist, "Daft Punk", "topic channel")
 eq(c.title, "One More Time", "title kept")
 
 c = query.cleaned({ artists = "Band", title = "Song (Live at Wembley) [HD]" })
-eq(c.title, "Song (Live at Wembley)", "keeps meaningful brackets")
+eq(c.title, "Song", "all brackets dropped in the fallback")
+
+c = query.cleaned({ artists = "Big Country", title = "Fields Of Fire - 2006 Remaster" })
+eq(c.artist, "Big Country", "version tail: artist kept")
+eq(c.title, "Fields Of Fire", "version tail dropped")
+c = query.cleaned({ artists = "The Undertones", title = "You've Got My Number (Why Don't You Use It!)" })
+eq(c.title, "You've Got My Number", "alternative title dropped")
+c = query.cleaned({ artists = "Big Country", title = "Big Country - Fields Of Fire" })
+eq(c.title, "Fields Of Fire", "artist named in the title")
+eq(query.cleaned({ artists = "Sips - Live!", title = "Bank Heist - Obenseuer" }), nil, "no split for a non-channel artist")
 
 eq(query.cleaned({ artists = "X", title = "(Official Video)" }), nil, "nothing left")
 
@@ -97,6 +108,31 @@ eq(enh[1].text, "Some words", "enhanced LRC text without stamps")
 eq(#enh[1].words, 2, "enhanced LRC words")
 eq(enh[1].words[2].t, 12400, "enhanced LRC word time")
 eq(enh[2].words, nil, "plain line has no words")
+
+local function w(text, space) return { text = text, space = space } end
+-- 100 px at size 10 with 0.56 per char: 17 characters a row.
+local rows = wrap.rows({ w("aaaa", true), w("bbbb", true), w("cccc", true), w("dd", false), w("ee", true), w("ffff", false) }, 10, 100)
+eq(#rows, 2, "wrap: two rows")
+eq(#rows[1], 3, "wrap: first row holds three words")
+eq(rows[2][1], 4, "wrap: break before the syllable pair")
+eq(rows[2][2], 5, "wrap: syllables stay together")
+eq(#wrap.rows({ w("short", true), w("line", false) }, 16, 900), 1, "wrap: short line one row")
+eq(#wrap.rows({ w("éééééééééé", true), w("ééééééééé", false) }, 10, 100), 2, "wrap: counts characters, not bytes")
+eq(#wrap.rows({}, 16, 900), 0, "wrap: no words")
+
+local spot = place.of("top-left")
+eq(spot.v .. "/" .. spot.h, "top/left", "place: corner")
+spot = place.of("bottom")
+eq(spot.v .. "/" .. spot.h, "bottom/center", "place: edge centre")
+spot = place.of("center")
+eq(spot.v .. "/" .. spot.h, "center/center", "place: centre")
+spot = place.of(nil)
+eq(spot.v .. "/" .. spot.h, "bottom/center", "place: default")
+spot = place.of("sideways")
+eq(spot.v .. "/" .. spot.h, "bottom/center", "place: unknown value")
+eq(place.flex("left"), "start", "place: flex start")
+eq(place.flex("bottom"), "end", "place: flex end")
+eq(place.flex("center"), "center", "place: flex centre")
 
 eq(b64.decode("TWFu"), "Man", "base64 full block")
 eq(b64.decode("TWE="), "Ma", "base64 one pad")

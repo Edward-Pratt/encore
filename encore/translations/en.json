@@ -66,15 +66,20 @@
     },
     "overlay_position": {
       "label": "Overlay position",
-      "description": "Which edge of the screen the lyrics overlay sits at.",
+      "description": "Where on the screen the lyrics overlay sits.",
       "options": {
         "bottom": "Bottom",
-        "top": "Top"
+        "bottom_left": "Bottom left",
+        "bottom_right": "Bottom right",
+        "center": "Centre",
+        "top": "Top",
+        "top_left": "Top left",
+        "top_right": "Top right"
       }
     },
     "overlay_offset": {
       "label": "Overlay distance from edge (px)",
-      "description": "How far the lyrics overlay sits from its edge of the screen."
+      "description": "How far the lyrics overlay sits from the screen edges it is placed against (none in the centre)."
     },
     "overlay_background": {
       "label": "Overlay background (%)",
@@ -82,7 +87,7 @@
     },
     "overlay_highlight": {
       "label": "Overlay highlighting",
-      "description": "Words lights each word as it is sung when the lyrics have word timing (NetEase has it for many tracks). Line lights the whole current line.",
+      "description": "Words lights each word as it is sung when the lyrics have word timing (NetEase has it for many tracks), and the whole line when they don't. Line always lights the whole line.",
       "options": {
         "words": "Words (karaoke)",
         "line": "Whole line",
