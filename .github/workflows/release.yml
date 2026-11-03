@@ -1,0 +1,14 @@
+name: Release
+
+# A vX.Y.Z tag on main, made by `herald release`, becomes
+# a GitHub release with a source archive and its SHA256SUMS. That tagged
+# version is the one to copy into the community catalog.
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    uses: Edward-Pratt/herald/.github/workflows/release.yml@v1
+    permissions:
+      contents: write

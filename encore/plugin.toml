@@ -1,0 +1,259 @@
+# Encore: every media player on one bar widget and panel, with synced lyrics and a
+# spectrum visualizer.
+#
+# Player data comes from noctalia's own dev.noctalia.Mpris service over busctl. A busctl
+# monitor stream of the players' signals says when to read it again, so nothing polls
+# fast. One service owns all data (see docs/DESIGN.md in the repo); the widget, panel and
+# launcher render what it publishes and send controls straight to dev.noctalia.Mpris.
+id = "edward/encore"
+name = "Encore"
+version = "0.1.0"
+# 43 (noctalia 5.4): the surface_container / outline_variant colour roles.
+# 33: revealKey on ui.scroll (lyrics follow the current line).
+# 24: argv process execution. 22: relative luau imports.
+plugin_api = 43
+author = "edward"
+license = "MIT"
+# hyprctl (background apps) is optional and checked at run time.
+dependencies = ["busctl", "sh", "grep"]
+tags = ["media", "music", "bar", "panel", "launcher", "service"]
+icon = "music"
+description = "Every media player on one bar widget and panel: switch players, seek, volume, synced lyrics and a spectrum visualizer."
+
+# Lyrics come from lrclib.net: the artist, title, album and length of the playing track
+# are sent there, once per track. Results are cached in the plugin's data dir.
+[[setting]]
+key = "lyrics"
+type = "bool"
+label_key = "settings.lyrics.label"
+description_key = "settings.lyrics.description"
+default = true
+
+# Backup sources: NetEase Cloud Music and Kugou get the artist and title (Kugou also the
+# length) when LRCLIB has no synced lyrics of the right length.
+[[setting]]
+key = "lyrics_backup"
+type = "bool"
+label_key = "settings.lyrics_backup.label"
+description_key = "settings.lyrics_backup.description"
+default = true
+visible_when = { key = "lyrics", values = ["true"] }
+
+[[setting]]
+key = "lyrics_offset_ms"
+type = "int"
+label_key = "settings.lyrics_offset_ms.label"
+description_key = "settings.lyrics_offset_ms.description"
+default = 0
+min = -5000
+max = 5000
+visible_when = { key = "lyrics", values = ["true"] }
+
+# Opening music apps (desktop entries in the Music category) from the panel and launcher.
+# Background uses Hyprland's special workspace "encore"; elsewhere apps open normally.
+[[setting]]
+key = "open_in_background"
+type = "bool"
+label_key = "settings.open_in_background.label"
+description_key = "settings.open_in_background.description"
+default = true
+
+[[setting]]
+key = "play_on_open"
+type = "bool"
+label_key = "settings.play_on_open.label"
+description_key = "settings.play_on_open.description"
+default = true
+
+[[setting]]
+key = "favourites"
+type = "string_list"
+label_key = "settings.favourites.label"
+description_key = "settings.favourites.description"
+default = []
+
+# Off by default: it acts on players the user did not touch.
+[[setting]]
+key = "pause_others"
+type = "bool"
+label_key = "settings.pause_others.label"
+description_key = "settings.pause_others.description"
+default = false
+
+
+# The lyrics overlay's monitor: a connector such as DP-1, "all", or empty for the
+# focused one. Turned on and off from the panel, launcher or IPC, not here.
+[[setting]]
+key = "overlay_output"
+type = "string"
+label_key = "settings.overlay_output.label"
+description_key = "settings.overlay_output.description"
+default = ""
+
+# Lyrics overlay look and place. On/off is a panel / launcher / IPC toggle, not a setting.
+[[setting]]
+key = "overlay_size"
+type = "int"
+label_key = "settings.overlay_size.label"
+description_key = "settings.overlay_size.description"
+default = 16
+min = 10
+max = 40
+
+[[setting]]
+key = "overlay_position"
+type = "select"
+label_key = "settings.overlay_position.label"
+description_key = "settings.overlay_position.description"
+default = "bottom"
+options = [
+  { value = "bottom", label_key = "settings.overlay_position.options.bottom" },
+  { value = "top", label_key = "settings.overlay_position.options.top" },
+]
+
+[[setting]]
+key = "overlay_offset"
+type = "int"
+label_key = "settings.overlay_offset.label"
+description_key = "settings.overlay_offset.description"
+default = 70
+min = 0
+max = 1000
+
+[[setting]]
+key = "overlay_background"
+type = "int"
+label_key = "settings.overlay_background.label"
+description_key = "settings.overlay_background.description"
+default = 80
+min = 0
+max = 100
+
+[[setting]]
+key = "overlay_highlight"
+type = "select"
+label_key = "settings.overlay_highlight.label"
+description_key = "settings.overlay_highlight.description"
+default = "words"
+options = [
+  { value = "words", label_key = "settings.overlay_highlight.options.words" },
+  { value = "line", label_key = "settings.overlay_highlight.options.line" },
+  { value = "none", label_key = "settings.overlay_highlight.options.none" },
+]
+
+[[setting]]
+key = "overlay_cover"
+type = "bool"
+label_key = "settings.overlay_cover.label"
+description_key = "settings.overlay_cover.description"
+default = true
+
+[[setting]]
+key = "overlay_next_line"
+type = "bool"
+label_key = "settings.overlay_next_line.label"
+description_key = "settings.overlay_next_line.description"
+default = false
+
+[[service]]
+id = "service"
+entry = "service.luau"
+
+[[widget]]
+id = "widget"
+entry = "widget.luau"
+
+# Scroll changes the shown player's volume (onScroll); the rest are host actions.
+[widget.actions]
+  left = "panel-toggle edward/encore:panel"
+  middle = "media toggle"
+  right = "media next-player"
+
+[[widget.setting]]
+  key = "show_art"
+  type = "bool"
+  label_key = "settings.show_art.label"
+  description_key = "settings.show_art.description"
+  default = true
+
+[[widget.setting]]
+  key = "show_artist"
+  type = "bool"
+  label_key = "settings.show_artist.label"
+  description_key = "settings.show_artist.description"
+  default = true
+
+[[widget.setting]]
+  key = "max_width"
+  type = "int"
+  label_key = "settings.max_width.label"
+  description_key = "settings.max_width.description"
+  default = 240
+  min = 0
+  max = 800
+
+[[widget.setting]]
+  key = "bar_lyrics"
+  type = "bool"
+  label_key = "settings.bar_lyrics.label"
+  description_key = "settings.bar_lyrics.description"
+  default = false
+
+[[widget.setting]]
+  key = "hide_when_idle"
+  type = "bool"
+  label_key = "settings.hide_when_idle.label"
+  description_key = "settings.hide_when_idle.description"
+  default = false
+
+# Both keys are read by the host itself: with audio_spectrum on it feeds the widget the
+# PipeWire output spectrum through onAudioSpectrum.
+[[widget.setting]]
+  key = "audio_spectrum"
+  type = "bool"
+  label_key = "settings.audio_spectrum.label"
+  description_key = "settings.audio_spectrum.description"
+  default = true
+
+[[widget.setting]]
+  key = "audio_spectrum_bands"
+  type = "int"
+  label_key = "settings.audio_spectrum_bands.label"
+  description_key = "settings.audio_spectrum_bands.description"
+  default = 10
+  min = 2
+  max = 32
+  visible_when = { key = "audio_spectrum", values = ["true"] }
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+width = 460
+height = 660
+# Space plays or pauses, left and right seek 10 seconds.
+capture_keys = ["Space", "left", "right"]
+placement = "attached"
+open_near_click = true
+dismiss_on_outside_click = true
+
+# Lyrics overlay: above everything, fullscreen games included. Click-through and without
+# keyboard, so it never gets in the way; reserves no space. Exists only while the service
+# shows it, which also sets its edge, offset and height from the overlay_* settings.
+[[layer]]
+id = "lyrics"
+entry = "overlay.luau"
+layer = "overlay"
+anchors = ["bottom"]
+width = 1100
+height = 140
+margins = { bottom = 90 }
+exclusive_zone = 0
+keyboard = "none"
+click_through = true
+output = "focused"
+
+[[launcher_provider]]
+id = "search"
+entry = "launcher.luau"
+prefix = "mu"
+glyph = "music"

@@ -1,0 +1,101 @@
+{
+  "settings": {
+    "lyrics": {
+      "label": "Fetch lyrics from lrclib.net",
+      "description": "Sends the playing track's artist, title, album and length to lrclib.net, once per track. Results are cached."
+    },
+    "lyrics_backup": {
+      "label": "Backup lyrics sources",
+      "description": "When lrclib.net has no synced lyrics, asks NetEase Cloud Music (music.163.com) and Kugou (kugou.com), both China-based, with the track's artist and title, and its length for Kugou."
+    },
+    "lyrics_offset_ms": {
+      "label": "Lyrics timing (ms)",
+      "description": "Shifts synced lyrics. Positive values show each line earlier, negative values later."
+    },
+    "show_art": {
+      "label": "Show album art",
+      "description": "Shows the cover next to the title. Without it, a status icon is shown."
+    },
+    "show_artist": {
+      "label": "Show artist",
+      "description": "Shows the artist after the title."
+    },
+    "max_width": {
+      "label": "Title width (px)",
+      "description": "Longest the title may get on the bar. 0 shows only the cover and the meter."
+    },
+    "hide_when_idle": {
+      "label": "Hide when nothing plays",
+      "description": "Hides the widget while every player is paused or stopped."
+    },
+    "audio_spectrum": {
+      "label": "Spectrum meter",
+      "description": "Shows a live spectrum of what you hear while a player is playing."
+    },
+    "audio_spectrum_bands": {
+      "label": "Spectrum bars",
+      "description": "Number of bars in the meter."
+    },
+    "open_in_background": {
+      "label": "Open apps in the background",
+      "description": "On Hyprland, apps opened from Encore start on a hidden workspace, so no window appears. A panel button shows or hides it. Elsewhere apps open normally."
+    },
+    "play_on_open": {
+      "label": "Play when opened",
+      "description": "Presses play once an app opened from Encore is ready, so it resumes where you left off."
+    },
+    "favourites": {
+      "label": "Favourites",
+      "description": "Spotify playlists, albums, artists or tracks to start from the panel and launcher. Paste a share link or spotify: URI, optionally as Name = link."
+    },
+    "pause_others": {
+      "label": "Pause other players",
+      "description": "When a player starts playing, pause every other player, so a video tab stops when Spotify starts."
+    },
+    "bar_lyrics": {
+      "label": "Lyrics on the bar",
+      "description": "Shows the current lyric line instead of the title while synced lyrics play."
+    },
+    "overlay_output": {
+      "label": "Lyrics overlay monitor",
+      "description": "Where the lyrics overlay appears: a monitor name such as DP-1, all for every monitor, or empty for the focused one."
+    },
+    "overlay_size": {
+      "label": "Overlay text size",
+      "description": "Size of the lyrics overlay's text, in pixels."
+    },
+    "overlay_position": {
+      "label": "Overlay position",
+      "description": "Which edge of the screen the lyrics overlay sits at.",
+      "options": {
+        "bottom": "Bottom",
+        "top": "Top"
+      }
+    },
+    "overlay_offset": {
+      "label": "Overlay distance from edge (px)",
+      "description": "How far the lyrics overlay sits from its edge of the screen."
+    },
+    "overlay_background": {
+      "label": "Overlay background (%)",
+      "description": "How solid the pill behind the lyrics is. 0 shows the text alone."
+    },
+    "overlay_highlight": {
+      "label": "Overlay highlighting",
+      "description": "Words lights each word as it is sung when the lyrics have word timing (NetEase has it for many tracks). Line lights the whole current line.",
+      "options": {
+        "words": "Words (karaoke)",
+        "line": "Whole line",
+        "none": "None"
+      }
+    },
+    "overlay_cover": {
+      "label": "Overlay cover",
+      "description": "Shows the album cover beside the lyric."
+    },
+    "overlay_next_line": {
+      "label": "Overlay next line",
+      "description": "Shows the upcoming line, dimmed, under the current one."
+    }
+  }
+}
