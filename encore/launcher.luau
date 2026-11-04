@@ -48,7 +48,9 @@ local function results(query)
     end
   end
   for i, f in ipairs(favs) do
-    add("fav-" .. i, `Play {f.name}`, "Favourite, in Spotify", "star", function() control.open(nil, f.uri) end)
+    local play = favourites.playable(f.uri)
+    add("fav-" .. i, `{play and "Play" or "Open"} {f.name}`, play and "Favourite, in Spotify" or "Opens in Spotify; press play there",
+      "star", function() control.open(nil, f.uri) end)
   end
   local copied = noctalia.clipboardText()
   if copied and favourites.uri(copied) then

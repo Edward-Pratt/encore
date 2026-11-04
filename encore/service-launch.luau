@@ -4,12 +4,15 @@
 -- Starts the app when it is not running (on Hyprland's hidden workspace with
 -- open_in_background), then waits for its player and plays: OpenUri for a favourite,
 -- Play otherwise (with play_on_open). A just-started player often ignores the first
--- request, so it is repeated every few seconds until the player reports Playing.
+-- request, so it is repeated every few seconds until the player reports Playing. A URI
+-- Spotify only opens (Liked Songs, see favourites.playable) is sent once, twice when the
+-- app was just started, and nothing waits for it to play.
 -- Also publishes `hidden`: the classes of windows on the hidden workspace.
 local util = require("./service-util.luau")
 local media = require("./media.luau")
 local control = require("./control.luau")
 local hyprland = require("./hyprland.luau")
+local favourites = require("./favourites.luau")
 
 local M = {}
 
@@ -41,8 +44,20 @@ function M.command(cmd)
   local running = media.playerFor(noctalia.state.get("players"), app)
   if not running then hyprland.exec(app.command, setting("open_in_background")) end
   pending = { app = app, uri = cmd.uri, play = cmd.uri ~= nil or setting("play_on_open"),
-    untilMs = noctalia.nowMs() + WAIT_MS, tries = 0, sentAt = nil, activated = false }
+    untilMs = noctalia.nowMs() + WAIT_MS, tries = 0, sentAt = nil, activated = false, launched = not running }
   M.step()
+end
+
+-- A URI the player only opens: there is no Playing status to wait for.
+local function openOnly(p, now)
+  if pending.sentAt and now - pending.sentAt < RETRY_MS then return end
+  pending.tries += 1
+  pending.sentAt = now
+  control.openUri(p, pending.uri)
+  if pending.tries >= (pending.launched and 2 or 1) then
+    noctalia.osd.show("heart", "Opened in Spotify: press play there")
+    pending = nil
+  end
 end
 
 -- Advances the pending open; runs on every players change and every service tick.
@@ -60,6 +75,7 @@ function M.step()
     pending.activated = true
     control.makeActive(p)
   end
+  if pending.uri and not favourites.playable(pending.uri) then return openOnly(p, now) end
   if not pending.play or (pending.tries > 0 and p.status == "Playing") or pending.tries >= TRIES then
     pending = nil
     return

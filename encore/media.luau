@@ -3,6 +3,7 @@
 -- position is now, and how times and tracks are written.
 
 local lrc = require("./lrc.luau")
+local sample = require("./position-sample.luau")
 
 local M = {}
 
@@ -19,13 +20,7 @@ function M.current(players, active)
 end
 
 -- The position now, extrapolated from the published sample while playing.
-function M.position(p, now)
-  if not p then return 0 end
-  local ms = p.positionMs or 0
-  if p.status == "Playing" then ms += (now or noctalia.nowMs()) - (p.sampledAt or 0) end
-  if (p.lengthMs or 0) > 0 then ms = math.min(ms, p.lengthMs) end
-  return math.max(0, ms)
-end
+function M.position(p, now) return sample.at(p, now or noctalia.nowMs()) end
 
 -- The synced lyric line playing at a position (0 before the first or without synced
 -- lyrics), with the user's lyrics_offset_ms applied.

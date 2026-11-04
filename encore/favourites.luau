@@ -28,6 +28,11 @@ end
 -- "spotify:playlist:ID" -> "playlist".
 function M.kind(uri) return string.match(uri or "", "^spotify:(%a+):") end
 
+-- Whether Spotify plays a URI sent to OpenUri. Liked Songs (spotify:collection:tracks)
+-- only opens its page: Spotify's desktop app starts no collection over MPRIS, under any
+-- URI form (tested with spotify:collection, spotify:user:<id>:collection[:tracks]).
+function M.playable(uri) return M.kind(uri) ~= "collection" end
+
 -- The open.spotify.com link for a URI, for Spotify's public name lookup (oEmbed); nil for
 -- URIs without a web page (Liked Songs).
 function M.webUrl(uri)

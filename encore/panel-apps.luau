@@ -91,7 +91,7 @@ local function favouriteRows(ctx)
     else
       local kind = f.uri == "spotify:collection:tracks" and "liked" or favourites.kind(f.uri)
       rows[#rows + 1] = ui.row({ key = "fav-" .. f.uri, gap = 10, align = "center", paddingV = 4, paddingH = 6, radius = 8,
-        tooltip = f.uri, onClick = function() control.open(nil, f.uri) end }, {
+        tooltip = favourites.playable(f.uri) and f.uri or "Opens in Spotify; Spotify cannot be told to play it", onClick = function() control.open(nil, f.uri) end }, {
         ui.glyph({ name = KIND_GLYPH[kind] or "music", size = 16, color = "primary" }),
         ui.label({ text = f.name, fontSize = 13, flexGrow = 1, maxLines = 1 }),
         ui.button({ key = "fav-ren-" .. i, glyph = "pencil", variant = "ghost", controlSize = "sm", tooltip = "Rename",
@@ -101,7 +101,7 @@ local function favouriteRows(ctx)
           end }),
         ui.button({ key = "fav-rm-" .. i, glyph = "x", variant = "ghost", controlSize = "sm", visible = f.saved == true,
           tooltip = "Remove from favourites", onClick = function() control.removeFavourite(f.uri) end }),
-        ui.glyph({ name = "player-play", size = 14, color = "on_surface_variant" }),
+        ui.glyph({ name = favourites.playable(f.uri) and "player-play" or "external-link", size = 14, color = "on_surface_variant" }),
       })
     end
   end

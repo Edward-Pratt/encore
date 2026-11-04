@@ -3,17 +3,15 @@
 -- publishes `players` and `active`. A busctl monitor stream of the players' own signals
 -- says when to read again; a slow resync covers a stream that died or missed a change.
 -- Position is published as a sample (positionMs at sampledAt) that the surfaces
--- extrapolate while playing, never as a ticking value.
+-- extrapolate while playing, never as a ticking value (position-sample.luau).
 local util = require("./service-util.luau")
 local art = require("./service-art.luau")
+local sample = require("./position-sample.luau")
 
 local M = {}
 
 local CALL = { "busctl", "--user", "--json=short", "call", "dev.noctalia.Mpris", "/dev/noctalia/Mpris", "dev.noctalia.Mpris" }
 M.RESYNC_MS = 10000
--- A resynced position this close to the extrapolated one keeps the old sample, so a
--- resync of a steadily playing track wakes nobody.
-local DRIFT_MS = 1000
 local SENTINEL = "encore-monitor-exited"
 -- The players' signals, noctalia's own (active player changes) and players coming and
 -- going. The echo tells the service the stream ended, since runStream has no close event.
@@ -81,16 +79,6 @@ local function readCanQuit(bus, done)
     end, 3000)
 end
 
--- Keeps the previous position sample when the new one only confirms it.
-local function keepSample(new)
-  local old = published[new.bus]
-  if not old or old.status ~= new.status or old.title ~= new.title or old.status ~= "Playing" then return end
-  local expected = old.positionMs + (new.sampledAt - old.sampledAt)
-  if math.abs(expected - new.positionMs) < DRIFT_MS then
-    new.positionMs, new.sampledAt = old.positionMs, old.sampledAt
-  end
-end
-
 local function publishAll()
   if not raw then return end
   local list, byBus = {}, {}
@@ -99,7 +87,7 @@ local function publishAll()
     r.art = art.path(r.artUrl, publishAll) or ""
     if canQuit[r.bus] == nil then readCanQuit(r.bus, publishAll) end
     r.canQuit = canQuit[r.bus] == true
-    keepSample(r)
+    sample.merge(published[r.bus], r)
     list[#list + 1] = r
     byBus[r.bus] = r
   end

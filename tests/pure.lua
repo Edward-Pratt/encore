@@ -144,6 +144,25 @@ eq(b64.decode("W3RpOkZp\nZWxkc10="), "[ti:Fields]", "base64 with newline")
 eq(b64.decode("5L2c6K+N"), "作词", "base64 utf-8")
 eq(b64.decode("@@@@"), nil, "base64 bad input")
 
+eq(fav.playable("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"), true, "favourites: playlist plays")
+eq(fav.playable("spotify:collection:tracks"), false, "favourites: Liked Songs only opens")
+
+local sample = load("position-sample")
+local function rec(pos, at, status) return { title = "T", status = status or "Playing", positionMs = pos, sampledAt = at } end
+local new = rec(10000, 10000); sample.merge(rec(0, 0), new)
+eq(new.sampledAt, 0, "sample: steady play keeps the old sample")
+new = rec(5000, 10000); sample.merge(rec(5000, 0), new)
+eq(new.stalled, true, "sample: Playing without moving is stalled")
+eq(sample.at(new, 20000), 5000, "sample: stalled position stands still")
+local again = rec(5000, 11000); sample.merge(new, again)
+eq(again.stalled, true, "sample: a quick read keeps the stall")
+local moving = rec(9000, 15000); sample.merge(again, moving)
+eq(moving.stalled, nil, "sample: moving again ends the stall")
+eq(sample.at(moving, 16000), 10000, "sample: moving again extrapolates")
+new = rec(1000, 1000); sample.merge(rec(1000, 0), new)
+eq(new.stalled, nil, "sample: too soon to call a stall")
+eq(sample.at(rec(1000, 0, "Paused"), 5000), 1000, "sample: paused stands still")
+
 -- lyrics-lookup with stub sources, each answering at once with a fixed result.
 local SYNCED = { status = "synced", lines = { { t = 0, text = "Line" } }, source = "A" }
 local INSTRUMENTAL = { status = "instrumental", source = "B" }
