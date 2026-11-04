@@ -6,6 +6,7 @@
 local http = require("./lyrics-http.luau")
 local lrc = require("./lrc.luau")
 local base64 = require("./base64.luau")
+local query = require("./lyrics-query.luau")
 
 local M = {}
 
@@ -13,12 +14,15 @@ local SEARCH = "https://lyrics.kugou.com/search?ver=1&man=yes&client=pc"
 local DOWNLOAD = "https://lyrics.kugou.com/download?ver=1&client=pc&fmt=lrc&charset=utf8"
 local MAX_DRIFT_S = 15
 
--- The candidate with the closest length, and its drift in seconds.
-local function pick(candidates, durationS)
+-- The candidate by the queried artist with the closest length, and its drift in seconds.
+-- Kugou's search is fuzzy: without the artist check it hands back other songs' lyrics.
+local function pick(candidates, q)
   local best, bestDrift = nil, nil
   for _, c in ipairs(type(candidates) == "table" and candidates or {}) do
-    local drift = durationS > 0 and math.abs((tonumber(c.duration) or 0) / 1000 - durationS) or 0
-    if c.id and c.accesskey and (not bestDrift or drift < bestDrift) then best, bestDrift = c, drift end
+    local drift = q.durationS > 0 and math.abs((tonumber(c.duration) or 0) / 1000 - q.durationS) or 0
+    if c.id and c.accesskey and query.sameArtist(q.artist, c.singer) and (not bestDrift or drift < bestDrift) then
+      best, bestDrift = c, drift
+    end
   end
   return best, bestDrift or 0
 end
@@ -46,7 +50,7 @@ function M.steps(q)
     local url = SEARCH .. "&keyword=" .. http.enc(q.artist .. " - " .. q.title)
     if q.durationS > 0 then url ..= "&duration=" .. (q.durationS * 1000) end
     http.get(url, function(v, err)
-      local c, drift = pick(v and v.candidates, q.durationS)
+      local c, drift = pick(v and v.candidates, q)
       if err or not c then return next(nil, err) end
       http.get(`{DOWNLOAD}&id={c.id}&accesskey={c.accesskey}`, function(reply, err2) next(result(reply, q, drift), err2) end)
     end)

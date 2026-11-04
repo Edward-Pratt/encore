@@ -6,6 +6,7 @@
 local http = require("./lyrics-http.luau")
 local lrc = require("./lrc.luau")
 local yrc = require("./yrc.luau")
+local query = require("./lyrics-query.luau")
 
 local M = {}
 
@@ -17,10 +18,8 @@ local INSTRUMENTAL = "纯音乐"
 
 local function artistMatches(song, artist)
   if artist == "" then return true end
-  artist = string.lower(artist)
   for _, a in ipairs(song.artists or {}) do
-    local name = string.lower(a.name or "")
-    if name ~= "" and (string.find(artist, name, 1, true) or string.find(name, artist, 1, true)) then return true end
+    if query.sameArtist(artist, a.name) then return true end
   end
   return false
 end

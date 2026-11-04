@@ -163,6 +163,31 @@ new = rec(1000, 1000); sample.merge(rec(1000, 0), new)
 eq(new.stalled, nil, "sample: too soon to call a stall")
 eq(sample.at(rec(1000, 0, "Paused"), 5000), 1000, "sample: paused stands still")
 
+-- Review fixes, 2026-11: dashes, artist match, credits mid-song, offset tags.
+local dashed = query.cleaned({ artists = "Queen", title = "Bohemian Rhapsody – Remastered 2011", lengthMs = 1000 })
+eq(dashed and dashed.title, "Bohemian Rhapsody", "query: en dash version tail")
+dashed = query.cleaned({ artists = "", title = "Daft Punk — Get Lucky", lengthMs = 1000 })
+eq(dashed and dashed.artist, "Daft Punk", "query: em dash splits artist")
+dashed = query.cleaned({ artists = "", title = "A - B – C", lengthMs = 1000 })
+eq(dashed and dashed.artist, "A", "query: earliest dash wins")
+eq(query.sameArtist("Queen", "Queen & David Bowie"), true, "artist: contained")
+eq(query.sameArtist("queen", "QUEEN"), true, "artist: case")
+eq(query.sameArtist("Queen", "Abba"), false, "artist: other")
+eq(query.sameArtist("", "Abba"), true, "artist: empty query")
+eq(query.sameArtist("Queen", ""), false, "artist: unnamed candidate")
+local kept = lrc.stripCredits(lrc.parse("[00:01]作词 : A\n[00:02]\n[00:03]作曲：B\n[00:04]\n[00:10]la\n[00:12]她说：我爱你\n[00:15]la\n[00:20]\n[01:00]制作人：C"))
+eq(#kept, 5, "credits: only edge runs go")
+eq(kept[1].t, 4000, "credits: gap after credits stays")
+eq(kept[3].text, "她说：我爱你", "credits: lyric with colon kept")
+eq(kept[5].text, "", "credits: closing gap stays")
+local shifted = lrc.parse("[offset:+500]\n[00:10.00]<00:10.00>A <00:11.00>B\n[00:00.20]start")
+eq(shifted[1].t, 0, "offset: clamped at 0")
+eq(shifted[2].t, 9500, "offset: positive moves earlier")
+eq(shifted[2].words[2].t, 10500, "offset: words move too")
+eq(lrc.parse("[offset:-500]\n[00:10.00]A")[1].t, 10500, "offset: negative moves later")
+local twice = lrc.parse("[offset:1000]\n[00:10.00][00:20.00]<00:10.00>A")
+eq(twice[2].words[1].t, 9000, "offset: shared words move once")
+
 -- lyrics-lookup with stub sources, each answering at once with a fixed result.
 local SYNCED = { status = "synced", lines = { { t = 0, text = "Line" } }, source = "A" }
 local INSTRUMENTAL = { status = "instrumental", source = "B" }
