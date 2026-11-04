@@ -42,12 +42,7 @@ function M.chipButtons(ctx)
   return out
 end
 
-local function spotifyInstalled(ctx)
-  for _, app in ipairs(ctx.S.apps) do
-    if app.wmClass == "spotify" or string.find(app.id, "spotify", 1, true) then return true end
-  end
-  return false
-end
+local function spotifyInstalled(ctx) return media.spotifyApp(ctx.S.apps) ~= nil end
 
 -- The Favourites tab shows with Spotify installed or any favourite set.
 function M.hasFavourites(ctx)

@@ -90,6 +90,14 @@ function M.isApp(p, app)
   return (desktop ~= "" and (desktop == app.id or desktop == app.wmClass)) or identity == string.lower(app.name or "")
 end
 
+-- Spotify's entry from `apps` (spotify-launcher, spotify, a Flatpak id), or nil.
+function M.spotifyApp(apps)
+  for _, app in ipairs(type(apps) == "table" and apps or {}) do
+    if app.wmClass == "spotify" or string.find(app.id, "spotify", 1, true) then return app end
+  end
+  return nil
+end
+
 function M.playerFor(players, app)
   for _, p in ipairs(type(players) == "table" and players or {}) do
     if M.isApp(p, app) then return p end

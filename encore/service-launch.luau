@@ -26,9 +26,10 @@ local lastAt = 0
 local function setting(key) return noctalia.getConfig(key) ~= false end
 
 local function findApp(id, uri)
-  for _, app in ipairs(noctalia.state.get("apps") or {}) do
-    if id and app.id == id then return app end
-    if not id and uri and (app.wmClass == "spotify" or string.find(app.id, "spotify", 1, true)) then return app end
+  local apps = noctalia.state.get("apps") or {}
+  if not id then return uri and media.spotifyApp(apps) or nil end
+  for _, app in ipairs(apps) do
+    if app.id == id then return app end
   end
   return nil
 end

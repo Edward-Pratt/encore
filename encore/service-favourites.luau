@@ -11,6 +11,7 @@
 --           | { action = "fav-rename", uri, name, at }
 local util = require("./service-util.luau")
 local favourites = require("./favourites.luau")
+local media = require("./media.luau")
 
 local M = {}
 
@@ -28,12 +29,7 @@ local lastAt = 0
 
 local function save() noctalia.writeFile(FILE, noctalia.json.encode(store) or "") end
 
-local function spotifyInstalled()
-  for _, app in ipairs(noctalia.state.get("apps") or {}) do
-    if app.wmClass == "spotify" or string.find(app.id, "spotify", 1, true) then return true end
-  end
-  return false
-end
+local function spotifyInstalled() return media.spotifyApp(noctalia.state.get("apps")) ~= nil end
 
 local lookupName
 
