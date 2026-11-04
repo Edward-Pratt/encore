@@ -6,7 +6,9 @@
 -- onBetter at once, so lyrics show as soon as any source has them; a word-timed hit of
 -- the right length ends the lookup early. onDone(best, failed) runs once, when all lanes
 -- are done or that best possible hit arrived; failed means nothing was found and some
--- source failed.
+-- source failed. An instrumental flag ranks below any lyrics: a source often matches an
+-- instrumental release of the song, so it never replaces lyrics another source found.
+-- Plain Lua 5 syntax, so tests/pure.lua can run it with stub sources.
 local query = require("./lyrics-query.luau")
 local lrclib = require("./lyrics-lrclib.luau")
 local netease = require("./lyrics-netease.luau")
@@ -22,10 +24,10 @@ local function hasWords(found)
 end
 
 -- Lower is better: right-length word timing, right-length lines, other-length word
--- timing, other-length lines, plain lyrics.
+-- timing, other-length lines, plain lyrics, instrumental.
 local function rank(found)
   if not found then return 99 end
-  if found.status == "instrumental" then return 1 end
+  if found.status == "instrumental" then return 6 end
   if found.status ~= "synced" then return 5 end
   return (found.loose and 3 or 1) + (hasWords(found) and 0 or 1)
 end
@@ -69,15 +71,15 @@ function M.run(track, backup, onBetter, onDone)
     local i, laneBest = 0, 99
     local function step(found, failed)
       if finished then return end
-      if failed then errors += 1 end
+      if failed then errors = errors + 1 end
       if found then
         offer(found)
         laneBest = math.min(laneBest, rank(found))
       end
-      i += 1
+      i = i + 1
       -- A lane stops at a hit of the right length; a cleaned query can only do worse.
       if i <= #steps and laneBest > 2 then return steps[i].run(step) end
-      running -= 1
+      running = running - 1
       if running == 0 then finish() end
     end
     step(nil, false)

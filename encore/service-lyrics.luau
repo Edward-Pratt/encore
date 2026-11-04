@@ -5,8 +5,8 @@
 --     source = "LRCLIB" | "NetEase" | "Kugou", loose = true when the version's length differs }
 -- One lookup per track, asking every source at once (lyrics-lookup.luau): LRCLIB, and
 -- NetEase and Kugou with lyrics_backup. The first usable result shows at once and
--- better ones replace it; the best is cached in <data>/lyrics. Misses are asked again
--- after a week, failures every 30 s up to three times.
+-- better ones replace it; the best is cached in <data>/lyrics. Misses and instrumentals
+-- are asked again after a week, failures every 30 s up to three times.
 local util = require("./service-util.luau")
 local media = require("./media.luau")
 local query = require("./lyrics-query.luau")
@@ -20,8 +20,9 @@ local MAX_TRACK_MS = 20 * 60000
 -- A lookup where a source failed and nothing was found is retried this often, this
 -- many times, before the miss is cached.
 local RETRY_MS, RETRIES = 30000, 3
--- Cache entries from another version or source set are looked up again unless synced.
-local CACHE_VERSION = 6
+-- Cache entries from another version or source set are looked up again. 7: instrumental
+-- no longer outranks lyrics, so older instrumental entries may be wrong.
+local CACHE_VERSION = 7
 
 local currentKey = nil
 local failedAt = nil -- when the current track's lookup last failed
@@ -32,12 +33,14 @@ local function cachePath(key) return util.dir("lyrics") .. "/" .. util.hash(key)
 local function backup() return noctalia.getConfig("lyrics_backup") ~= false end
 local function sources() return backup() and "lrclib,netease,kugou" or "lrclib" end
 
+-- Misses and instrumentals are asked again after a week: an instrumental may be a
+-- source matching the wrong release.
 local function fresh(cached)
   if not cached then return false end
-  if cached.status == "instrumental" then return true end
   if cached.status == "synced" and not cached.loose and cached.v == CACHE_VERSION then return true end
   if cached.v ~= CACHE_VERSION or cached.sources ~= sources() then return false end
-  return cached.status ~= "none" or noctalia.nowMs() - (cached.at or 0) < MISS_RETRY_MS
+  if cached.status ~= "none" and cached.status ~= "instrumental" then return true end
+  return noctalia.nowMs() - (cached.at or 0) < MISS_RETRY_MS
 end
 
 local function publish(key, value)
@@ -67,9 +70,10 @@ function M.check(force)
   if fresh(cached) then return publish(key, cached) end
 
   publish(key, { status = "loading" })
-  -- Any usable result shows at once; better ones replace it as they arrive.
+  -- Any usable result shows at once; better ones replace it as they arrive. An
+  -- instrumental waits for the end, so it never flashes before lyrics arrive.
   lookup.run(track, backup(), function(found)
-    if currentKey == key then publish(key, table.clone(found)) end
+    if currentKey == key and found.status ~= "instrumental" then publish(key, table.clone(found)) end
   end, function(found, failed)
     if failed and failures < RETRIES then
       failures += 1

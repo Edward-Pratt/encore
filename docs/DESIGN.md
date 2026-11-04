@@ -153,7 +153,10 @@ the player reports Playing. Spotify ignores requests while it starts.
 - **Parallel lookup**: the sources are lanes that run side by side (`lyrics-lookup.luau`);
   each lane tries the exact query, then the cleaned one, and stops at a hit of the right
   length. Results rank: right-length word timing (ends the whole lookup), right-length
-  lines, other-length word timing, other-length lines, plain. Sequential lookups made
+  lines, other-length word timing, other-length lines, plain, instrumental. An
+  instrumental never replaces lyrics: sources often match an instrumental release of
+  the song (same length), so it shows only when no source has lyrics, and is looked up
+  again after a week like a miss. Sequential lookups made
   the overlay late and left the backups unused whenever LRCLIB was slow or answering 503.
 - **Lengths**: every source returns its closest version and flags it `loose` when it is
   more than 15 s off. Players sometimes report a stale length at a track

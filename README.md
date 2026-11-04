@@ -52,7 +52,7 @@ For editor type checking, put `noctalia.d.luau` from
 repo root. It is gitignored.
 
 ```sh
-lua tests/pure.lua              # LRC parser and lyrics queries
+lua tests/pure.lua              # LRC parser, lyrics queries, lookup ranking
 noctalia plugins lint encore   # settings against code
 ```
 

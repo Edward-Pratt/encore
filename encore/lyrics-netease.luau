@@ -44,16 +44,22 @@ local function result(reply, drift)
   if type(reply) ~= "table" or reply.nolyric or reply.uncollected then return nil end
   local text = type(reply.lrc) == "table" and reply.lrc.lyric or ""
   if type(text) ~= "string" or text == "" then return nil end
-  if string.find(text, INSTRUMENTAL, 1, true) then return { status = "instrumental", source = "NetEase" } end
   local words = type(reply.yrc) == "table" and type(reply.yrc.lyric) == "string" and yrc.parse(reply.yrc.lyric) or {}
   local lines = #words > 0 and lrc.stripCredits(words) or lrc.stripCredits(lrc.parse(text))
+  -- Instrumental only when the marker is all there is, not when a lyric mentions it.
+  local instrumental = string.find(text, INSTRUMENTAL, 1, true) ~= nil
+  for _, l in ipairs(lines) do
+    if l.text ~= "" and not string.find(l.text, INSTRUMENTAL, 1, true) then instrumental = false end
+  end
+  if instrumental then return { status = "instrumental", source = "NetEase" } end
   if #lines > 0 then return { status = "synced", lines = lines, source = "NetEase", loose = drift > MAX_DRIFT_S } end
   return nil
 end
 
 -- Releases of one song differ: the closest length may have no lyrics, or no word
--- timing, while the next does. So up to TRIES are fetched, closest first; the first
--- word-timed one wins, else the first with lyrics.
+-- timing, while the next does, and one may be an instrumental release. So up to TRIES
+-- are fetched, closest first; the first word-timed one wins, else the first with
+-- lyrics, else an instrumental.
 function M.steps(q)
   return { { run = function(next)
     http.get(SEARCH .. http.enc(q.title .. " " .. q.artist), function(v, err)
@@ -66,10 +72,10 @@ function M.steps(q)
         if not c then return next(fallback, false) end
         http.get(LYRIC .. tostring(c.song.id), function(reply, err2)
           local found = not err2 and result(reply, c.drift) or nil
-          if found and (found.status == "instrumental" or found.lines and found.lines[1] and found.lines[1].words) then
-            return next(found, false)
+          if found and found.lines and found.lines[1] and found.lines[1].words then return next(found, false) end
+          if found and (not fallback or fallback.status == "instrumental" and found.status ~= "instrumental") then
+            fallback = found
           end
-          fallback = fallback or found
           try()
         end)
       end

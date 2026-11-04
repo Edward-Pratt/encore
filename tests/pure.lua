@@ -144,6 +144,31 @@ eq(b64.decode("W3RpOkZp\nZWxkc10="), "[ti:Fields]", "base64 with newline")
 eq(b64.decode("5L2c6K+N"), "作词", "base64 utf-8")
 eq(b64.decode("@@@@"), nil, "base64 bad input")
 
+-- lyrics-lookup with stub sources, each answering at once with a fixed result.
+local SYNCED = { status = "synced", lines = { { t = 0, text = "Line" } }, source = "A" }
+local INSTRUMENTAL = { status = "instrumental", source = "B" }
+local function lookupWith(lrclib, netease, kugou)
+  local function stub(found) return { steps = function() return { { run = function(next) next(found, false) end } } end } end
+  local stubs = { ["./lyrics-query.luau"] = query, ["./lyrics-lrclib.luau"] = stub(lrclib),
+    ["./lyrics-netease.luau"] = stub(netease), ["./lyrics-kugou.luau"] = stub(kugou) }
+  for name, mod in pairs(stubs) do
+    package.loaded[name] = nil
+    package.preload[name] = function() return mod end
+  end
+  local lookup = load("lyrics-lookup")
+  local shown, best = {}, nil
+  lookup.run({ artists = "Artist", title = "Song", lengthMs = 200000 }, true,
+    function(found) shown[#shown + 1] = found.status end, function(found) best = found end)
+  return shown, best
+end
+local shown, best = lookupWith(SYNCED, INSTRUMENTAL, nil)
+eq(best and best.status, "synced", "lookup: late instrumental keeps lyrics")
+eq(table.concat(shown, ","), "synced", "lookup: late instrumental not shown")
+shown, best = lookupWith(INSTRUMENTAL, nil, SYNCED)
+eq(best and best.status, "synced", "lookup: lyrics replace an early instrumental")
+shown, best = lookupWith(INSTRUMENTAL, nil, nil)
+eq(best and best.status, "instrumental", "lookup: instrumental when nothing else")
+
 if failures > 0 then
   print(failures .. " failed")
   os.exit(1)
