@@ -43,7 +43,7 @@ noctalia.state.watch("command", function(cmd)
 end)
 
 function onConfigChanged()
-  lyrics.check(true)
+  lyrics.configChanged()
   overlay.configChanged()
   favs.publish()
 end

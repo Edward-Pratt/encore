@@ -25,8 +25,12 @@ local RETRY_MS, RETRIES = 30000, 3
 local CACHE_VERSION = 7
 
 local currentKey = nil
+local shownKey = nil -- the key of the published lyrics
 local failedAt = nil -- when the current track's lookup last failed
 local failures = 0
+-- key -> the source set of the lookup running for it, so a forced check or a return to
+-- the track never starts a second one.
+local running = {}
 
 local function keyOf(q) return string.lower(`{q.artist}|{q.title}|{q.album}|{q.durationS}`) end
 local function cachePath(key) return util.dir("lyrics") .. "/" .. util.hash(key) .. ".json" end
@@ -45,11 +49,12 @@ end
 
 local function publish(key, value)
   value.key = key
+  shownKey = key
   util.publish("lyrics", value)
 end
 
--- Looks the shown track up when it changed; force looks it up again (settings change,
--- retry after a failure).
+-- Looks the shown track up when it changed; force looks it up again (a lyrics setting
+-- changed, retry after a failure).
 function M.check(force)
   if noctalia.getConfig("lyrics") == false then
     currentKey = nil
@@ -69,25 +74,43 @@ function M.check(force)
   local cached = util.decode(noctalia.readFile(cachePath(key)) or "")
   if fresh(cached) then return publish(key, cached) end
 
+  local src = sources()
+  if running[key] == src then
+    if shownKey ~= key then publish(key, { status = "loading" }) end
+    return
+  end
+  running[key] = src
   publish(key, { status = "loading" })
   -- Any usable result shows at once; better ones replace it as they arrive. An
   -- instrumental waits for the end, so it never flashes before lyrics arrive.
   lookup.run(track, backup(), function(found)
     if currentKey == key and found.status ~= "instrumental" then publish(key, table.clone(found)) end
   end, function(found, failed)
+    if running[key] == src then running[key] = nil end
     if failed and failures < RETRIES then
-      failures += 1
+      -- Retried only while the track is still shown; otherwise its next play asks again.
       if currentKey == key then
+        failures += 1
         failedAt = noctalia.nowMs()
         publish(key, { status = "error" })
       end
       return
     end
     local value = found or { status = "none" }
-    value.at, value.v, value.sources = noctalia.nowMs(), CACHE_VERSION, sources()
+    value.at, value.v, value.sources = noctalia.nowMs(), CACHE_VERSION, src
     noctalia.writeFile(cachePath(key), noctalia.json.encode(value) or "")
     if currentKey == key then publish(key, value) end
   end)
+end
+
+-- Settings changed: looks the track up again only when a lyrics setting did (dragging
+-- an overlay slider used to start a lookup per step).
+local seenConfig = nil
+function M.configChanged()
+  local now = `{noctalia.getConfig("lyrics") ~= false}|{sources()}`
+  if now == seenConfig then return end
+  seenConfig = now
+  M.check(true)
 end
 
 -- Looks the current track up again after a failure, every RETRY_MS.
