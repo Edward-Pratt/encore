@@ -14,7 +14,7 @@ local MESSAGES = {
   loading = { "loader-2", "Looking for lyrics…" },
   none = { "message-question", "No lyrics found for this track." },
   instrumental = { "piano", "Instrumental." },
-  error = { "wifi-off", "Couldn't reach lrclib.net. Trying again shortly." },
+  error = { "wifi-off", "Couldn't reach the lyrics sources. Trying again shortly." },
 }
 
 local function offsetMs() return tonumber(noctalia.getConfig("lyrics_offset_ms")) or 0 end

@@ -19,7 +19,7 @@ local function dispatch(lua, classic, done)
     end
     noctalia.runAsync({ "hyprctl", "dispatch", table.unpack(classic) }, function(r2)
       local ok = noctalia.string.trim(r2.stdout) == "ok"
-      if not ok then noctalia.log(`encore: hyprctl dispatch failed: {noctalia.string.trim(r.stdout)}`) end
+      if not ok then noctalia.log(`encore: hyprctl dispatch failed: {noctalia.string.trim(r2.stdout)}`) end
       if done then done(ok) end
     end, 3000)
   end, 3000)
