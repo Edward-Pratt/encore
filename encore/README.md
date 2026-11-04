@@ -7,7 +7,8 @@ lyrics and a spectrum visualizer.
 
 - **Bar widget**: the cover, title and artist of the shown player, and a live spectrum
   meter while it plays. Click opens the panel, middle click plays or pauses, right click
-  switches to the next player, scroll changes its volume.
+  switches to the next player, scroll changes its volume. With no player open it shows
+  a music icon that opens the panel.
 - **Panel**: a chip for every running player. Click one to make it noctalia's active
   player, so media keys, the OSD and the lockscreen follow it. Cover, seek bar,
   shuffle, previous, play/pause, next, repeat and volume. Space plays or pauses, Left

@@ -71,18 +71,25 @@ local function tooltip(p)
   return rows
 end
 
+-- No player open: a music glyph, so the panel (which starts music apps) stays a click away.
+local function renderEmpty()
+  barWidget.render(ui.glyph({ name = "music", size = 16, color = "on_surface_variant" }))
+  barWidget.setTooltip({ { key = "Encore", value = "No player open. Click to start one." } })
+end
+
 local function render()
   local p = media.current(players, active)
-  local show = p ~= nil and (p.status == "Playing" or not setting("hide_when_idle", false))
+  local show = (p ~= nil and p.status == "Playing") or not setting("hide_when_idle", false)
   barWidget.setVisible(show)
   if not show then return end
   -- Lyrics need a quick tick; everything else arrives through state.
-  local following = setting("bar_lyrics", false) and p.status == "Playing" and lyrics and lyrics.status == "synced"
+  local following = p and setting("bar_lyrics", false) and p.status == "Playing" and lyrics and lyrics.status == "synced"
   local interval = following and LYRIC_TICK_MS or 60000
   if interval ~= tickMs then
     tickMs = interval
     noctalia.setUpdateInterval(interval)
   end
+  if not p then return renderEmpty() end
   shownLine = following and media.lyricIndex(lyrics, media.position(p)) or 0
   local vertical = barWidget.isVertical()
   local children = { cover(p) }

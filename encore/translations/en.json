@@ -26,7 +26,7 @@
     },
     "hide_when_idle": {
       "label": "Hide when nothing plays",
-      "description": "Hides the widget while every player is paused or stopped."
+      "description": "Hides the widget while every player is paused or stopped, or none is open. Otherwise a music icon stays on the bar."
     },
     "audio_spectrum": {
       "label": "Spectrum meter",
