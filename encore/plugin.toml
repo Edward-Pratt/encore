@@ -7,7 +7,7 @@
 # launcher render what it publishes and send controls straight to dev.noctalia.Mpris.
 id = "edward/encore"
 name = "Encore"
-version = "0.3.2"
+version = "0.3.3"
 # 43 (noctalia 5.4): the surface_container / outline_variant colour roles.
 # 33: revealKey on ui.scroll (lyrics follow the current line).
 # 24: argv process execution. 22: relative luau imports.
