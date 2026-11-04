@@ -6,7 +6,7 @@
     },
     "lyrics_backup": {
       "label": "Backup lyrics sources",
-      "description": "When lrclib.net has no synced lyrics, asks NetEase Cloud Music (music.163.com) and Kugou (kugou.com), both China-based, with the track's artist and title, and its length for Kugou."
+      "description": "Also asks NetEase Cloud Music (music.163.com) and Kugou (kugou.com), both China-based, for every track, alongside lrclib.net: the track's artist and title, and its length for Kugou."
     },
     "lyrics_offset_ms": {
       "label": "Lyrics timing (ms)",
@@ -46,7 +46,7 @@
     },
     "liked_songs": {
       "label": "Liked Songs in favourites",
-      "description": "Lists your Spotify Liked Songs first among the favourites."
+      "description": "Lists your Spotify Liked Songs first among the favourites. Spotify only opens it: press play there."
     },
     "favourites": {
       "label": "Favourites",

@@ -32,14 +32,14 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
     service.luau            the only entry that reads player data or fetches lyrics; wiring only
     service-players.luau    busctl monitor stream, GetPlayers / GetActivePlayer, publishing
     service-art.luau        art URL -> local file (ui.image reads local files only)
-    service-lyrics.luau     LRCLIB lookup chain and cache
+    service-lyrics.luau     lyrics for the shown track: one lookup at a time per track, cache
     service-apps.luau       music apps from desktop entries
     service-launch.luau     opening apps and favourites, play-once-ready, hidden windows
     service-events.luau     reactions to player changes: pause others
     service-sleep.luau      sleep timer
     service-favourites.luau favourites: Liked Songs, the setting, pasted links and renames (<data>/favourites.json), names via oEmbed
     service-util.luau       data dir, publish-on-change, cache-name hash
-    lyrics-lookup.luau      one lookup across all sources at once, best result wins
+    lyrics-lookup.luau      one lookup across all sources at once, best result wins (plain Lua 5; tests stub the sources)
     lyrics-http.luau        JSON GETs for the lyrics sources
     lyrics-lrclib.luau      LRCLIB lookups (exact match, search)
     lyrics-netease.luau     NetEase Cloud Music lookup, a backup source
@@ -56,6 +56,7 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
     favourites.luau         favourites setting and Spotify links -> spotify: URIs (pure, plain Lua 5)
     hyprland.luau           exec on the hidden workspace, toggle it, list its windows
     media.luau              shown player, extrapolated position, formatting; shared by all
+    position-sample.luau    position samples: drift check, stall detection, extrapolation (pure, plain Lua 5)
     control.luau            busctl calls to dev.noctalia.Mpris; any surface calls these
     widget.luau             bar widget
     panel.luau              panel shell: state, keys, frame tick
@@ -134,6 +135,20 @@ the player reports Playing. Spotify ignores requests while it starts.
 
 - **Drift check.** A resync whose position is within 1 s of the extrapolated one keeps the
   old sample, so `players` is not republished every 10 s while a track plays.
+- **Stalled players.** A player that says Playing but whose position moves less than
+  250 ms in 3 s is marked `stalled`, and the surfaces stop moving its seek bar. Spotify
+  does this while it loads, or stuck with nothing to play. A player that always reports
+  position 0 while playing now shows a still bar at 0 rather than one that crept forward
+  and snapped back every resync.
+- **Liked Songs only opens.** Spotify's desktop app answers `OpenUri` for a playlist,
+  album or track by playing it, but for Liked Songs only opens the page, under every URI
+  form (`spotify:collection[:tracks]`, `spotify:user:<id>:collection[:tracks]`, with or
+  without `#0:00.001`; tested November 2026). `favourites.playable` marks it; the
+  service sends it once (twice after starting Spotify) and says to press play there.
+- **Lookups per track.** Only the `lyrics` and `lyrics_backup` settings force a new
+  lookup, and a track with a lookup running never starts a second one. Before, any
+  settings change (each step of an overlay slider) looked up again every track whose
+  cache is never fresh: plain, loose or missing lyrics.
 - **Long tracks** (over 20 min) are not looked up: they are streams, podcasts or long
   videos, and sending their titles to LRCLIB is pointless. LRCLIB also answers 400 for
   them; a 400 counts as a miss, not an error.
@@ -168,7 +183,11 @@ the player reports Playing. Spotify ignores requests while it starts.
   lane. When nothing is found and a source failed, the lookup is retried every
   30 s, three times, before the miss is cached. Cache entries carry a version and the
   source set, so plain lyrics and misses are looked up again when the backups are switched on.
-  NetEase lyrics start with credit lines ("作词 : Name"); `lrc.stripCredits` drops them.
+  NetEase lyrics start with credit lines ("作词 : Name"); `lrc.stripCredits` drops the
+  leading and trailing runs of them only, since inside the song "她说：..." is a lyric.
+  Kugou's search is fuzzy, so its candidates must match the artist (`query.sameArtist`,
+  shared with NetEase); artists Kugou lists only under another script are missed.
+  `[offset:ms]` tags in LRC move the lines and word stamps.
 - **Lyrics overlay** is an `overlay`-layer surface (above fullscreen windows), click-through
   and without keyboard, 1100x140 near the bottom edge. Minimal by design: the current
   line alone on a slim translucent pill with the cover. It fades in (180 ms) only when it

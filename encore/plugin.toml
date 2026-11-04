@@ -30,7 +30,7 @@ description_key = "settings.lyrics.description"
 default = true
 
 # Backup sources: NetEase Cloud Music and Kugou get the artist and title (Kugou also the
-# length) when LRCLIB has no synced lyrics of the right length.
+# length) of every looked-up track, asked alongside LRCLIB (lyrics-lookup.luau).
 [[setting]]
 key = "lyrics_backup"
 type = "bool"

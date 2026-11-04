@@ -30,7 +30,8 @@ lyrics and a spectrum visualizer.
   own panel tab and the launcher. In Spotify use Share > Copy link, then **Paste link** in
   the Favourites tab (or the launcher's "Add copied Spotify link"); names come from
   Spotify, and the pencil button renames any favourite. One click starts Spotify if
-  needed and plays it.
+  needed and plays it. Liked Songs only opens in Spotify: its desktop app plays no
+  collection on request, so press play there.
 - **Quit**: a power button quits apps that allow it (Spotify does, browsers don't), handy
   for one running hidden in the background.
 - **Sleep timer**: the zzz button next to the volume pauses everything after 15, 30, 45,
@@ -54,7 +55,7 @@ others.
 | Setting | Default | |
 | --- | --- | --- |
 | Fetch lyrics from lrclib.net | on | Off: no network requests at all |
-| Backup lyrics sources | on | Asks NetEase (music.163.com) and Kugou (kugou.com) when LRCLIB has no synced lyrics |
+| Backup lyrics sources | on | Also asks NetEase (music.163.com) and Kugou (kugou.com) for every track, alongside LRCLIB |
 | Lyrics timing (ms) | 0 | Positive shows lines earlier |
 | Lyrics overlay monitor | focused | A connector such as `DP-1`, or `all` |
 | Overlay text size | 16 | Pixels |
@@ -77,9 +78,9 @@ meter and its number of bars.
 ## Privacy
 
 With lyrics on, Encore sends the playing track's artist, title, album and length to
-`lrclib.net`, once per track. When LRCLIB has no synced lyrics and the backup sources are
-on, the artist and title also go to NetEase Cloud Music (`music.163.com`) and Kugou
-(`kugou.com`, with the length), both China-based. Tracks longer than 20 minutes are never sent. Results,
+`lrclib.net`, once per track. With the backup sources on (the default), the artist and
+title of every looked-up track also go to NetEase Cloud Music (`music.163.com`) and Kugou
+(`kugou.com`, with the length), both China-based, at the same time as LRCLIB. Tracks longer than 20 minutes are never sent. Results,
 including "not found", are cached in the plugin's data directory. Album art served over
 HTTP(S) is downloaded from the URL the player reports and cached there too. A favourite
 without a name is looked up on Spotify's public link preview (`open.spotify.com/oembed`).
