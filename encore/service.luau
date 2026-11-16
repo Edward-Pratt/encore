@@ -5,6 +5,7 @@ local players = require("./service-players.luau")
 local lyrics = require("./service-lyrics.luau")
 local apps = require("./service-apps.luau")
 local launch = require("./service-launch.luau")
+local windows = require("./service-windows.luau")
 local favourites = require("./favourites.luau")
 local hyprland = require("./hyprland.luau")
 local events = require("./service-events.luau")
@@ -26,7 +27,7 @@ noctalia.state.watch("players", function(list)
   events.onPlayers(list)
   lyrics.check()
   launch.step()
-  launch.checkHidden()
+  windows.check()
   overlay.update()
 end)
 noctalia.state.watch("active", function()
@@ -34,9 +35,13 @@ noctalia.state.watch("active", function()
   overlay.update()
 end)
 noctalia.state.watch("lyrics", function() overlay.update() end)
-noctalia.state.watch("apps", function() favs.publish() end)
+noctalia.state.watch("apps", function()
+  favs.publish()
+  windows.check()
+end)
 noctalia.state.watch("command", function(cmd)
   launch.command(cmd)
+  windows.command(cmd)
   sleep.command(cmd)
   overlay.command(cmd)
   favs.command(cmd)
@@ -50,7 +55,8 @@ end
 
 -- `noctalia msg plugin edward/encore:service all open spotify-launcher` opens an app by
 -- desktop id; `... open spotify:playlist:ID` (or a share link) plays it in Spotify.
--- `... hidden` shows or hides the background apps; `... sleep 30` sets the sleep timer
+-- `... hidden` shows or hides the background apps; `... hide spotify-launcher` moves an
+-- app's windows there and `... bring spotify-launcher` back; `... sleep 30` sets the sleep timer
 -- (0 cancels); `... overlay` turns the lyrics overlay on or off; `... fav-add <link>`
 -- saves a Spotify link as a favourite. All suit keybinds.
 function onIpc(event, payload)
@@ -59,6 +65,8 @@ function onIpc(event, payload)
     launch.command({ action = "open", app = not uri and string.lower(payload) or nil, uri = uri, at = noctalia.nowMs() })
   elseif event == "hidden" then
     hyprland.toggle()
+  elseif (event == "hide" or event == "bring") and payload then
+    windows.command({ action = event, app = string.lower(payload), at = noctalia.nowMs() })
   elseif event == "sleep" then
     sleep.set(payload)
   elseif event == "overlay" then
@@ -76,7 +84,7 @@ function update()
   lyrics.retry()
   if noctalia.nowMs() - players.lastFetch >= players.RESYNC_MS then
     players.fetch()
-    launch.checkHidden()
+    windows.check()
   end
   if noctalia.nowMs() - apps.lastScan >= apps.RESCAN_MS then apps.scan() end
 end

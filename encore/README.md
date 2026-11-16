@@ -25,7 +25,9 @@ lyrics and a spectrum visualizer.
 - **Open music apps, in the background**: every installed music app (such as Spotify)
   gets an Open button in the panel and launcher. On Hyprland it starts on a hidden
   workspace, so no window appears, and starts playing once it is ready. A button next to
-  the players shows or hides it.
+  the players shows or hides it. An app opened another way gets a hide button there that
+  moves its window to the hidden workspace, and a hidden one a button that brings it back
+  to the workspace you are on. The launcher offers both too.
 - **Favourites**: Liked Songs plus any Spotify playlist, album, artist or track, in their
   own panel tab and the launcher. In Spotify use Share > Copy link, then **Paste link** in
   the Favourites tab (or the launcher's "Add copied Spotify link"); names come from
@@ -37,7 +39,7 @@ lyrics and a spectrum visualizer.
 - **Sleep timer**: the zzz button next to the volume pauses everything after 15, 30, 45,
   60 or 90 minutes. Each click lengthens it, right click cancels.
 - **Launcher**: type `mu` for play/pause, next, previous, switching player, quitting,
-  opening apps, favourites, the sleep timer and the panel.
+  opening, hiding and bringing back apps, favourites, the sleep timer and the panel.
 - **Light on resources**: no polling. Encore follows the players' D-Bus signals and
   reads noctalia's player list only when something changes.
 
@@ -92,6 +94,8 @@ noctalia msg plugin edward/encore:widget focused click            # toggle the p
 noctalia msg plugin edward/encore:service all open spotify-launcher  # open an app by desktop id
 noctalia msg plugin edward/encore:service all open spotify:playlist:ID   # play in Spotify (a share link works too)
 noctalia msg plugin edward/encore:service all hidden                 # show or hide background apps
+noctalia msg plugin edward/encore:service all hide spotify-launcher  # move an app's windows to the hidden workspace
+noctalia msg plugin edward/encore:service all bring spotify-launcher # move them back to the focused workspace
 noctalia msg plugin edward/encore:service all sleep 30               # sleep timer in minutes, 0 cancels
 noctalia msg plugin edward/encore:service all overlay                # lyrics overlay on or off
 noctalia msg plugin edward/encore:service all fav-add <spotify link> # save a favourite

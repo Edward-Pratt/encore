@@ -1,7 +1,8 @@
 --!nonstrict
--- The panel's launch parts: an Open button per music app that is not running, the
--- toggle for apps on the hidden workspace, the favourites list, and the view shown
--- when no player runs. Opening goes through the service (control.open).
+-- The panel's launch parts: an Open button per music app that is not running, a hide
+-- button per app with a window in sight and a bring-back one per hidden app, the toggle
+-- for the hidden workspace, the favourites list, and the view shown when no player runs.
+-- Opening and moving windows go through the service (control.open, hide, bring).
 local media = require("./media.luau")
 local control = require("./control.luau")
 local hyprland = require("./hyprland.luau")
@@ -24,12 +25,21 @@ end
 
 local function openTip(app) return background() and `Open {app.name} in the background` or `Open {app.name}` end
 
--- For the chips row: Open buttons, then the hidden-workspace toggle when it holds windows.
+-- For the chips row: Open buttons, a hide button per app with a window in sight, a
+-- bring-back button per hidden app, then the hidden-workspace toggle when it holds windows.
 function M.chipButtons(ctx)
   local out = {}
   for _, app in ipairs(notRunning(ctx)) do
     out[#out + 1] = ui.button({ key = "open-" .. app.id, glyph = "plus", text = app.name, variant = "ghost", controlSize = "sm",
       tooltip = openTip(app), onClick = function() control.open(app.id) end })
+  end
+  for _, app in ipairs(media.windowApps(ctx.S.windows, ctx.S.apps, false)) do
+    out[#out + 1] = ui.button({ key = "hide-" .. app.id, glyph = "eye-off", variant = "ghost", controlSize = "sm",
+      tooltip = `Hide {app.name} in the background`, onClick = function() control.hide(app.id) end })
+  end
+  for _, app in ipairs(media.windowApps(ctx.S.windows, ctx.S.apps, true)) do
+    out[#out + 1] = ui.button({ key = "bring-" .. app.id, glyph = "eye", variant = "ghost", controlSize = "sm",
+      tooltip = `Bring {app.name} back to this workspace`, onClick = function() control.bring(app.id) end })
   end
   if #ctx.S.hidden > 0 then
     out[#out + 1] = ui.button({ key = "hidden", glyph = "app-window", variant = "ghost", controlSize = "sm",

@@ -34,7 +34,8 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
     service-art.luau        art URL -> local file (ui.image reads local files only)
     service-lyrics.luau     lyrics for the shown track: one lookup at a time per track, cache
     service-apps.luau       music apps from desktop entries
-    service-launch.luau     opening apps and favourites, play-once-ready, hidden windows
+    service-launch.luau     opening apps and favourites, play-once-ready
+    service-windows.luau    music-app windows: hidden or in sight, moving them into and out of hiding
     service-events.luau     reactions to player changes: pause others
     service-sleep.luau      sleep timer
     service-favourites.luau favourites: Liked Songs, the setting, pasted links and renames (<data>/favourites.json), names via oEmbed
@@ -54,7 +55,7 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
     lyrics-query.luau       exact and cleaned lyrics queries (pure, plain Lua 5)
     desktop-entry.luau      desktop entry parser, Exec without field codes (pure, plain Lua 5)
     favourites.luau         favourites setting and Spotify links -> spotify: URIs (pure, plain Lua 5)
-    hyprland.luau           exec on the hidden workspace, toggle it, list its windows
+    hyprland.luau           exec on the hidden workspace, move windows in and out, toggle it, list windows
     media.luau              shown player, extrapolated position, formatting; shared by all
     position-sample.luau    position samples: drift check, stall detection, extrapolation (pure, plain Lua 5)
     control.luau            busctl calls to dev.noctalia.Mpris; any surface calls these
@@ -62,7 +63,7 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
     panel.luau              panel shell: state, keys, frame tick
     panel-player.luau       player chips, track, seek, transport, volume
     panel-lyrics.luau       lyrics pane
-    panel-apps.luau         Open buttons, hidden toggle, favourites pane, launch view
+    panel-apps.luau         Open, hide and bring-back buttons, hidden toggle, favourites pane, launch view
     launcher.luau           "mu" launcher provider
     translations/en.json
 ```
@@ -75,7 +76,7 @@ encore/                     repo root, added to noctalia as a `path` plugin sour
 | Change signals | `busctl monitor` matching `PropertiesChanged` / `Seeked` on `/org/mpris/MediaPlayer2`, signals from `dev.noctalia.Mpris`, and `NameOwnerChanged` for `org.mpris.MediaPlayer2.*` | streamed |
 | Art | `file://` passed through; `http(s)` downloaded to `<data>/art`, newest 60 kept | when a new art URL appears |
 | Apps | one `grep` for `Categories=...Music` over every XDG `applications` dir, then those entries are read | at start and every 10 min |
-| Hidden windows | `hyprctl clients -j`, windows on `special:encore` | on players change and every 10 s, Hyprland only |
+| Music-app windows | `hyprctl clients -j`: windows on `special:encore`, and windows of `apps` entries (class = `wmClass` or id) there or on normal workspaces | on players or apps change, on panel open, after a move, and every 10 s; Hyprland only |
 | Lyrics | LRCLIB (`/api/get`, then `/api/search`), NetEase (search + `/api/song/lyric/v1`) and Kugou (search + download), all at once, each first with the player's fields and then with a cleaned title (video noise, version tails such as "- 2006 Remaster", bracketed alternative titles) | once per track; the first usable result shows at once and better ones replace it; the best is cached in `<data>/lyrics`; misses retried after 7 days, failures every 30 s up to 3 times |
 
 Controls go straight from the surface to `dev.noctalia.Mpris` (`control.luau`), which
@@ -107,9 +108,13 @@ lyrics  = { key, status = "off" | "idle" | "loading" | "synced" | "plain" | "ins
 overlay = { enabled }
 apps    = [{ id, name, command, icon, wmClass }]   -- id, wmClass lowercased; command without field codes
 hidden  = [class]                    -- lowercased classes of windows on special:encore
+windows = [{ app, address, hidden }] -- windows of `apps` entries (by id): on special:encore or a normal workspace
 poke    = nowMs                      -- surface -> service: read players now
 command = { action = "open", app?, uri?, at }       -- surface -> service: open an app / play a favourite
         | { action = "sleep", minutes, at }          -- set the sleep timer, 0 cancels
+        | { action = "hide", app, at }             -- move an app's windows in sight to special:encore
+        | { action = "bring", app, at }            -- move its hidden windows to the focused workspace
+        | { action = "windows", at }               -- read the windows again (panel opened)
         | { action = "fav-add", link, at } | { action = "fav-remove", uri, at }
         | { action = "fav-rename", uri, name, at }   -- any favourite; "" restores its own name
 favourites = [{ name, uri, saved }]  -- saved: pasted in the panel or launcher, removable there
@@ -130,6 +135,20 @@ without Hyprland, `sh -c`. Hyprland applies the rule to the launched process tre
 `spotify`, its launcher entry is `spotify-launcher`), makes it noctalia's active player,
 and sends `OpenUri` for a favourite or `Play`, again every 3 s, up to five times, until
 the player reports Playing. Spotify ignores requests while it starts.
+
+An app opened another way (from the desktop, or brought back) sits on a normal
+workspace. The panel and launcher then offer to hide it: the `hide` command reads the
+windows again and moves each of that app's windows with
+`hl.dsp.window.move({ workspace = "special:encore", window = "address:...", follow = false })`
+(classic: `movetoworkspacesilent special:encore,address:...`), so focus stays put. A
+hidden app gets a bring-back button instead: `bring` moves its windows the same way to
+the focused monitor's workspace, read from `hyprctl monitors -j`: by id for a numbered
+one (`name:7` does not find workspace 7) and by `name:` otherwise (Hyprland 0.57 reports
+no id for a named workspace). `hyprctl activeworkspace` ignores a shown special
+workspace, so when `special:encore` is open on that monitor it is toggled closed once
+the app's windows are moved, or it would cover them; any other app in it is hidden again
+with it. Only `apps` entries get these, so a browser playing music is
+never hidden; windows on another special workspace (a scratchpad) are left where they are.
 
 ## Decisions
 

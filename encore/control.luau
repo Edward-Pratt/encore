@@ -90,6 +90,21 @@ function M.open(appId, uri)
   noctalia.state.set("command", { action = "open", app = appId, uri = uri, at = noctalia.nowMs() })
 end
 
+-- Moves an app's windows (by `apps` id) to the hidden workspace, or back to the focused
+-- workspace; checkWindows asks the service to read the windows again. See
+-- service-windows.luau.
+function M.hide(appId)
+  noctalia.state.set("command", { action = "hide", app = appId, at = noctalia.nowMs() })
+end
+
+function M.bring(appId)
+  noctalia.state.set("command", { action = "bring", app = appId, at = noctalia.nowMs() })
+end
+
+function M.checkWindows()
+  noctalia.state.set("command", { action = "windows", at = noctalia.nowMs() })
+end
+
 -- Makes this the player noctalia controls everywhere: its media keys, OSD and lockscreen.
 function M.makeActive(p) call("SetActivePlayerPreference", "s", p.bus) end
 
