@@ -1,7 +1,7 @@
 --!nonstrict
 -- "mu" launcher provider: the shown player's controls first, then every other player
 -- (activate one to make it noctalia's active player), music apps to open, favourites,
--- the hidden-workspace toggle and the panel.
+-- hiding and bringing back music apps, the hidden-workspace toggle and the panel.
 local media = require("./media.luau")
 local control = require("./control.luau")
 local hyprland = require("./hyprland.luau")
@@ -12,6 +12,7 @@ local players = noctalia.state.get("players") or {}
 local active = noctalia.state.get("active") or ""
 local apps = noctalia.state.get("apps") or {}
 local hidden = noctalia.state.get("hidden") or {}
+local windows = noctalia.state.get("windows") or {}
 local sleep = noctalia.state.get("sleep")
 local overlay = noctalia.state.get("overlay")
 local actions = {} -- result id -> function
@@ -56,6 +57,14 @@ local function results(query)
   if copied and favourites.uri(copied) then
     add("fav-add", "Add copied Spotify link to favourites", copied, "clipboard-plus", function() control.addFavourite(copied) end)
   end
+  for _, app in ipairs(media.windowApps(windows, apps, false)) do
+    add("hide-" .. app.id, `Hide {app.name} in the background`, "Moves its window to Encore's hidden workspace",
+      "eye-off", function() control.hide(app.id) end)
+  end
+  for _, app in ipairs(media.windowApps(windows, apps, true)) do
+    add("bring-" .. app.id, `Bring {app.name} back`, "Moves its window to this workspace", "eye",
+      function() control.bring(app.id) end)
+  end
   if #hidden > 0 then
     add("hidden", "Show background apps", "Toggles Encore's hidden workspace", "app-window", function() hyprland.toggle() end)
   end
@@ -86,6 +95,7 @@ noctalia.state.watch("players", function(v) players = v or {}; onQuery(lastQuery
 noctalia.state.watch("active", function(v) active = v or ""; onQuery(lastQuery) end)
 noctalia.state.watch("apps", function(v) apps = v or {}; onQuery(lastQuery) end)
 noctalia.state.watch("hidden", function(v) hidden = v or {}; onQuery(lastQuery) end)
+noctalia.state.watch("windows", function(v) windows = v or {}; onQuery(lastQuery) end)
 noctalia.state.watch("sleep", function(v) sleep = v; onQuery(lastQuery) end)
 noctalia.state.watch("overlay", function(v) overlay = v; onQuery(lastQuery) end)
 noctalia.state.watch("favourites", function(v) favs = v or {}; onQuery(lastQuery) end)

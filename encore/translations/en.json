@@ -38,7 +38,7 @@
     },
     "open_in_background": {
       "label": "Open apps in the background",
-      "description": "On Hyprland, apps opened from Encore start on a hidden workspace, so no window appears. A panel button shows or hides it. Elsewhere apps open normally."
+      "description": "On Hyprland, apps opened from Encore start on a hidden workspace, so no window appears. A panel button shows or hides it; others hide an app opened another way and bring a hidden one back. Elsewhere apps open normally."
     },
     "play_on_open": {
       "label": "Play when opened",

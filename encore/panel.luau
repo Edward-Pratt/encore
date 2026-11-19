@@ -23,6 +23,7 @@ local function loadState()
   S.lyrics = noctalia.state.get("lyrics")
   S.apps = noctalia.state.get("apps") or {}
   S.hidden = noctalia.state.get("hidden") or {}
+  S.windows = noctalia.state.get("windows") or {}
   S.sleep = noctalia.state.get("sleep")
   S.overlay = noctalia.state.get("overlay")
   S.favourites = noctalia.state.get("favourites") or {}
@@ -65,7 +66,7 @@ end
 
 ctx = { S = S, render = render, close = function() panel.close() end, now = 0, position = 0, line = 0 }
 
-for _, k in ipairs({ "players", "active", "lyrics", "apps", "hidden", "sleep", "overlay", "favourites" }) do
+for _, k in ipairs({ "players", "active", "lyrics", "apps", "hidden", "windows", "sleep", "overlay", "favourites" }) do
   noctalia.state.watch(k, function()
     loadState()
     render()
@@ -99,6 +100,7 @@ function onOpen()
   isOpen = true
   loadState()
   panel.setNeedsFrameTick(true)
+  control.checkWindows() -- a window moved by hand since the last check
   render()
 end
 

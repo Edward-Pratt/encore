@@ -105,6 +105,19 @@ function M.playerFor(players, app)
   return nil
 end
 
+-- The `apps` entries with a window hidden (true) or in sight (false), from `windows`.
+function M.windowApps(windows, apps, hidden)
+  local has = {}
+  for _, w in ipairs(type(windows) == "table" and windows or {}) do
+    if w.hidden == hidden then has[w.app] = true end
+  end
+  local out = {}
+  for _, app in ipairs(type(apps) == "table" and apps or {}) do
+    if has[app.id] then out[#out + 1] = app end
+  end
+  return out
+end
+
 function M.statusGlyph(p)
   if not p then return "music-off" end
   if p.status == "Playing" then return "player-play" end

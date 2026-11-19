@@ -7,8 +7,6 @@
 -- request, so it is repeated every few seconds until the player reports Playing. A URI
 -- Spotify only opens (Liked Songs, see favourites.playable) is sent once, twice when the
 -- app was just started, and nothing waits for it to play.
--- Also publishes `hidden`: the classes of windows on the hidden workspace.
-local util = require("./service-util.luau")
 local media = require("./media.luau")
 local control = require("./control.luau")
 local hyprland = require("./hyprland.luau")
@@ -85,10 +83,6 @@ function M.step()
   pending.tries += 1
   pending.sentAt = now
   if pending.uri then control.openUri(p, pending.uri) else control.play(p) end
-end
-
-function M.checkHidden()
-  hyprland.hidden(function(classes) util.publish("hidden", classes) end)
 end
 
 return M
